@@ -6,7 +6,7 @@
  **/
 window.elFinder = function(node, opts) {
 	this.time('load');
-	
+	//console.log('load',this);
 	var self = this,
 		
 		/**
@@ -205,6 +205,7 @@ window.elFinder = function(node, opts) {
 		syncInterval,
 		
 		open = function(data) {
+			//console.log('OPEN QWITH DATA ',data);
 			if (data.init) {
 				// init - reset cache
 				files = {};
@@ -235,6 +236,7 @@ window.elFinder = function(node, opts) {
 		 * @return void
 		 **/
 		cache = function(data) {
+		console.log('cache',data);
 			var l = data.length, f;
 
 			while (l--) {
@@ -290,6 +292,8 @@ window.elFinder = function(node, opts) {
 		i18n
 		;
 
+
+/* END VARIABLE AND FUNCTION DEFNS DIRECTLY ON window.elFinder
 
 	/**
 	 * Protocol version
@@ -844,6 +848,7 @@ window.elFinder = function(node, opts) {
 	 * @return $.Deferred
 	 */
 	this.request = function(options) { 
+	console.log('request',options);
 		var self     = this,
 			o        = this.options,
 			dfrd     = $.Deferred(),
@@ -862,7 +867,9 @@ window.elFinder = function(node, opts) {
 			// sync files on request fail
 			syncOnFail = options.syncOnFail,
 			// open notify dialog timeout		
-			timeout, 
+			timeout,
+			//console.log('request',options,o,data,cmd,notify,this.requestType);
+			
 			// request options
 			options = $.extend({
 				url      : o.url,
@@ -1015,7 +1022,7 @@ window.elFinder = function(node, opts) {
 
 		delete options.preventFail
 
-		xhr = this.transport.send(options).fail(error).done(success);
+		xhr = this.transport.send(options).fail(error).done(success).always(function(res) {console.log('transport SENT',res)});
 		
 		// this.transport.send(options)
 		
@@ -1155,11 +1162,12 @@ window.elFinder = function(node, opts) {
 	 */
 	this.bind = function(event, callback) {
 		var i;
-		
+		//console.log('bindme',event,callback);
 		if (typeof(callback) == 'function') {
 			event = ('' + event).toLowerCase().split(/\s+/);
-			
+			//console.log('hav fn',event);
 			for (i = 0; i < event.length; i++) {
+			//console.log('bindme loop ',i,listeners,event[i]);
 				if (listeners[event[i]] === void(0)) {
 					listeners[event[i]] = [];
 				}
@@ -1207,8 +1215,12 @@ window.elFinder = function(node, opts) {
 				event.data = $.extend(true, {}, data);
 
 				try {
-					if (handlers[i](event, this) === false 
+					//console.log('start try',event) //i,handlers[i]); //	event.isDefaultPrevented()); //,handlers[i],event);
+					var handlerResult=handlers[i](event, this)
+				//console.log('OK got res',handlerResult);
+					if (handlerResult === false 
 					|| event.isDefaultPrevented()) {
+						//console.log('OK stopped');
 						this.debug('event-stoped', event.type);
 						break;
 					}
@@ -1467,7 +1479,7 @@ window.elFinder = function(node, opts) {
 	}
 	
 	if (typeof(this.transport.send) != 'function') {
-		this.transport.send = function(opts) { return $.ajax(opts); }
+		this.transport.send = function(opts) { console.log('ajax send',opts.data); return $.ajax(opts); }
 	}
 	
 	if (this.transport.upload == 'iframe') {

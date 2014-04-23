@@ -45,7 +45,24 @@ elFinder.prototype._options = {
 	 *  }
 	 **/
 	transport : {},
-
+	/*transport : {
+		init : function(elfinderInstance) {
+			console.log('init');
+		},
+		send : function(options) {
+			var dfrd = $.Deferred();
+			console.log('send',options);
+			// connect to backend ...
+			return dfrd;
+		},
+		upload : function(data) {
+			var dfrd = $.Deferred();
+			console.log('upload',data);
+			// upload ...
+			return dfrd;
+		}
+	},
+	*/
 	/**
 	 * URL to upload file to.
 	 * If not set - connector URL will be used
@@ -227,8 +244,8 @@ elFinder.prototype._options = {
 		toolbar : [
 			['back', 'forward'],
 			['netmount'],
-			// ['reload'],
-			// ['home', 'up'],
+			 ['reload'],
+			['home', 'up'],
 			['mkdir', 'mkfile', 'upload'],
 			['open', 'download', 'getfile'],
 			['info'],

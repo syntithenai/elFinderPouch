@@ -163,6 +163,7 @@ $.fn.elfinderdialog = function(opts) {
 		$.each(opts.buttons, function(name, cb) {
 			var button = $('<button type="button" class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only"><span class="ui-button-text">'+name+'</span></button>')
 				.click($.proxy(cb, self[0]))
+				//.click(function(e) { console.log('dialog button click',e,cb,self[0]); return $.proxy(cb, self[0],[self[0],e])})
 				.hover(function(e) { $(this)[e.type == 'mouseenter' ? 'focus' : 'blur']() })
 				.focus(function() { $(this).addClass(clhover) })
 				.blur(function() { $(this).removeClass(clhover) })
@@ -178,7 +179,7 @@ $.fn.elfinderdialog = function(opts) {
 				})
 			buttonset.append(button);
 		})
-			
+		// TODO if options.buttonPosition=header header.append(buttonpane)
 		buttonset.children().length && dialog.append(buttonpane);
 		if (opts.resizable && $.fn.resizable) {
 			dialog.resizable({

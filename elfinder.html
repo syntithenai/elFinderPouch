@@ -17,16 +17,18 @@
 		<script src="js/elfinder.min.js"></script>
 
 		<!-- elFinder translation (OPTIONAL) -->
-		<script src="js/i18n/elfinder.ru.js"></script>
+		<script src="js/i18n/elfinder.en.js"></script>
 
 		<!-- elFinder initialization (REQUIRED) -->
 		<script type="text/javascript" charset="utf-8">
 			// Documentation for client options:
 			// https://github.com/Studio-42/elFinder/wiki/Client-configuration-options
 			$(document).ready(function() {
-				$('#elfinder').elfinder({
-					url : 'php/connector.minimal.php'  // connector URL (REQUIRED)
-					// , lang: 'ru'                    // language (OPTIONAL)
+				
+				jQuery('#elfinder')
+				.elFinder(null,{
+				//	url : 'php/connector.php'  // connector URL (REQUIRED)
+				//	 , lang: 'en'                    // language (OPTIONAL)
 				});
 			});
 		</script>

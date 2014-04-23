@@ -66,11 +66,13 @@ elFinder.prototype.commands.edit = function() {
 				ta.getContent = function() {
 					return ta.val()
 				}
-				
+				console.log('check config for editors',self.options.editors);
+					
 				$.each(self.options.editors || [], function(i, editor) {
 					if ($.inArray(file.mime, editor.mimes || []) !== -1 
 					&& typeof editor.load == 'function'
 					&& typeof editor.save == 'function') {
+						console.log('have editor',editor);
 						ta.editor = {
 							load     : editor.load,
 							save     : editor.save,

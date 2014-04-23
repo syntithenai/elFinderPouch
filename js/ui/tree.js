@@ -243,6 +243,7 @@ $.fn.elfindertree = function(fm, opts) {
 			 * @return void
 			 */
 			updateTree = function(dirs) {
+			
 				var length  = dirs.length,
 					orphans = [],
 					i = dirs.length, 
@@ -444,14 +445,23 @@ $.fn.elfindertree = function(fm, opts) {
 		fm.open(function(e) {
 			var data = e.data,
 				dirs = filter(data.files);
+			//console.log('elfinder tree - open',e.data.files,dirs,tree);
 
 			data.init && tree.empty();
+			//console.log('elfinder tree - update');
 
 			if (dirs.length) {
+						//console.log('elfinder tree - add dirs');
+
 				updateTree(dirs);
+							//console.log('elfinder tree - update tree');
+
 				updateArrows(dirs, loaded);
+							//console.log('elfinder tree - update arrow');
+
 			} 
 			sync();
+
 		})
 		// add new dirs
 		.add(function(e) {

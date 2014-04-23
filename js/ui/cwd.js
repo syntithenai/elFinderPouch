@@ -911,7 +911,7 @@ $.fn.elfindercwd = function(fm, options) {
 			  	e.preventDefault();
 				wrapper.removeClass(clDropActive);
 
-				e.dataTransfer && e.dataTransfer.files &&  e.dataTransfer.files.length && fm.exec('upload', {files : e.dataTransfer.files})//fm.upload({files : e.dataTransfer.files});
+				e.dataTransfer && e.dataTransfer.files &&  e.dataTransfer.files.length && fm.exec('upload', {event : e})//fm.upload({files : e.dataTransfer.files});
 			}, false);
 		}
 

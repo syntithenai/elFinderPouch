@@ -88,6 +88,7 @@ $.fn.elfindercontextmenu = function(fm) {
 										.click(function(e) {
 											e.stopPropagation();
 											close();
+											console.log('click contextmenu',targets,variant);
 											cmd.exec(targets, variant[0]);
 										})
 								);

@@ -236,6 +236,7 @@ if (elFinder && elFinder.prototype && typeof(elFinder.prototype.i18) == 'object'
 			'dropFiles'       : 'Drop files here',
 			'or'              : 'or',
 			'selectForUpload' : 'Select files to upload',
+			'selectFolderForUpload' : 'Select folder to upload',
 			'moveFiles'       : 'Move files',
 			'copyFiles'       : 'Copy files',
 			'rmFromPlaces'    : 'Remove from places',

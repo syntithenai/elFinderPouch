@@ -46,26 +46,37 @@ elFinder.prototype.commands.upload = function() {
 			return $.Deferred().reject();
 		}
 		
-		if (data && (data.input || data.files)) {
+		if (data && (data.input || data.files || data.event)) {
 			return fm.upload(data);
 		}
 		
 		dfrd = $.Deferred();
 		
 		
-		input = $('<input type="file" multiple="true"/>')
-			.change(function() {
-				upload({input : input[0]});
+		var input1 = $('<input type="file" multiple="true"  />')
+			.change(function(e) {
+				//upload({input : input1[0]});
+				upload({event : e});
+			});
+		var input2 = $('<input type="file"  webkitdirectory />')
+			.change(function(e) {
+				//upload({input : input2[0]});
+				upload({event : e});
 			});
 
-		button = $('<div class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only"><span class="ui-button-text">'+fm.i18n('selectForUpload')+'</span></div>')
-			.append($('<form/>').append(input))
+		var button1 = $('<div class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only"><span class="ui-button-text">'+fm.i18n('selectForUpload')+'</span></div>')
+			.append($('<form/>').append(input1))
 			.hover(function() {
-				button.toggleClass(hover)
+				button1.toggleClass(hover)
 			})
-			
+		var button2 = $('<div class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only"><span class="ui-button-text">'+fm.i18n('selectFolderForUpload')+'</span></div>')
+			.append($('<form/>').append(input2))
+			.hover(function() {
+				button2.toggleClass(hover)
+			})
+	
 		dialog = $('<div class="elfinder-upload-dialog-wrapper"/>')
-			.append(button);
+			.append(button1).append(button2);
 		
 		if (fm.dragUpload) {
 			dropbox = $('<div class="ui-corner-all elfinder-upload-dropbox">'+fm.i18n('dropFiles')+'</div>')
@@ -93,7 +104,8 @@ elFinder.prototype.commands.upload = function() {
 				e.stopPropagation();
 			  	e.preventDefault();
 			
-				upload({files : e.dataTransfer.files});
+				//upload({files : e.dataTransfer.files});
+				upload({event : e});
 			}, false);
 			
 		}
