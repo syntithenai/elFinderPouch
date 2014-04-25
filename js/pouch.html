@@ -1,0 +1,115 @@
+<script src="../lib/jquery.js"></script>
+<script src="../lib/pouchdb.js"></script>
+
+see log
+<script>
+$(document).ready(function() {
+	var pdb = new PouchDB('http://127.0.0.1:5984/steve',function(err,database){
+		if(err){
+			console.error("Bad Stuff happend",err,database);
+		}else{
+			console.log("good news!",err,database);
+			pdb.allDocs(null,function(error,response) {
+				console.log('alldocs',error,response);
+			});
+			pdb.changes({
+				live:true,
+				complete: function(change) {console.log('complete'); },
+				onChange: function(change) {console.log('change'); console.log(change); }
+			});
+		}
+	});
+});
+
+
+
+
+
+/*
+var viewnote = function(noteid) {
+  var noteform = document.querySelector('#noteform');
+ 
+  pdb.get(noteid, {attachments: true}, function(error, response) {
+    var fields = Object.keys(response), o, link, attachments, li;
+ 
+    if (error) {
+      return;
+    } else {
+      // Since our note field names and form field names match,
+      //   We can just iterate over them. 
+ 
+      fields.map(function(f) {
+        if (noteform[f] !== undefined && noteform[f].type != 'file') {
+          noteform[f].value = response[f];
+        }
+ 
+        if (f == '_attachments') {
+          attachments = response[f];
+ 
+          for (o in attachments) {
+            li = document.createElement('li');
+            link = document.createElement('a');
+            link.href = 'data:' + attachments[o].content_type + ';base64,' + attachments[o].data;
+            link.target = "_blank";
+            link.appendChild(document.createTextNode(o));
+            li.appendChild(link);
+          }
+ 
+          document.getElementById('attachmentlist').appendChild(li);
+        }
+      });
+    } 
+  }); 
+}
+
+
+
+var search = function(searchkey) {
+  var map = function(doc) {
+    var searchkey, regex;
+ 
+    // Escape characters with special RegExp meaning 
+    searchkey = document.getElementById('q').value.replace(/[$-\/?[-^{|}]/g, '\\$&');
+    regex = new RegExp(searchkey,'i');
+     
+    // If the notetitle, note, or tags fields match, 
+       //return only the fields we need to create the result list. 
+    if (doc.notetitle.match(regex) ||
+        doc.note.match(regex) ||
+        doc.tags.match(regex)) {
+      emit(doc._id, {notetitle: doc.notetitle, note: doc.note, tags: doc.tags});
+    }
+  }
+ 
+  db.query(map, function(err, response) { 
+    if (err) {
+      console.log(err);
+    }
+ 
+    if (response) {
+      var df, rows, nl, results;
+ 
+      // Rewrite the response so that our object has the 
+         //correct structure for our addrow function. 
+      results = response.rows.map(function(r) {
+        r.doc = r.value;
+        delete r.value;
+        return r;
+      });
+ 
+      nl = document.querySelector('#notelist tbody');
+      df = document.createDocumentFragment(), 
+      rows = results.map(addrow, that);
+      rows.map(function(f) {
+        if (f) {
+          df.appendChild(f); 
+        }
+      });
+ 
+      nl.innerHTML = '';
+      nl.appendChild(df);
+    }
+  });
+}*/
+
+</script>

@@ -1,0 +1,246 @@
+<script src="../lib/jquery.js"></script>
+<script src="../lib/underscore-min.js"></script>
+<script src="../lib/backbone-min.js"></script>
+<script src="../lib/pouchdb.js"></script>
+<script src="../lib/backbone-pouch.min.js"></script>
+<script>
+var db=null;
+var i=null;
+function initPouch() {
+	db=PouchDB('http://127.0.0.1:5984/filesystem');
+	//db=PouchDB('http://192.168.0.103:5985/filesystem');
+	
+	// MODEL INIT
+	Backbone.Model.prototype.idAttribute = '_id';	  
+	Post = Backbone.Model.extend({
+	  sync: BackbonePouch.sync({
+		db: db
+	  })
+	});
+	Posts = Backbone.Collection.extend({
+	  model: Post,
+	  sync: BackbonePouch.sync({
+		db: db,
+		fetch: 'query',
+		options: {
+		  query: {
+			fun: {
+			  map: function(doc) {
+				  emit(doc._id,doc.title, null)
+			  }
+			},
+			limit: 80
+		  },
+		}
+	  })
+	});
+	b=new Posts();
+	b.fetch();
+	
+	db.changes({live:true,onChange: function(changes) {
+		console.log('changes',changes);
+	}});
+	
+	
+/*	
+	function(document) {
+	  if(document.type == 'person') {
+		emit([document.id, 0], document);
+	  }
+	  else if(document.type == 'order') {
+		emit([document.person, 1], document);
+	  } 
+	}
+	
+	// DESIGN VIEW QUERY FUNCTION
+	function(doc) {
+		if (doc.mime=='folder') {
+			emit([doc.hash,0], doc);
+		}
+		if (doc.mime=='folder' && doc.phash) {
+			emit([doc.phash
+		}
+	}
+	
+	// FILESYSTEM DATA
+	db.bulkDocs({docs: [
+	{
+   "_id": "_design/filesystem",
+   "_rev": "1-e3bfef5ca709be01b09f7f0f611f8a85",
+   "language": "javascript",
+   "views": {
+       "folders": {
+           "map": "function(doc) {\nif (doc.mime=='folder') {\n\temit([doc.hash,0], doc);\n}\nif (doc.mime=='folder' && doc.phash) {\n\temit([doc.phash,1], doc);\n}\n}\n"
+       }
+   }
+},*/
+	db.bulkDocs({docs: [
+	{
+		name:'steve home folder',
+		// hash,mime filled on load
+		_id : '1',
+		hash : 'pouchlocalfilesystem_1',
+		phash : 'pouchlocalfilesystem_filesystemroot',
+		path : [],
+		locked : 1,
+		mime : 'directory',
+		type: 'directory',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'personal',
+		// hash,mime filled on load
+		_id : '2',
+		hash : 'pouchlocalfilesystem_2',
+		phash : 'pouchlocalfilesystem_1',
+		path : ['pouchlocalfilesystem_1'],
+		locked : 0,
+		mime : 'directory',
+		type: 'directory',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'business',
+		// hash,mime filled on load
+		_id : '3',
+		hash : 'pouchlocalfilesystem_3',
+		phash : 'pouchlocalfilesystem_1',
+		path : ['pouchlocalfilesystem_1'],
+		locked : 0,
+		mime : 'directory',
+		type: 'directory',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'finance',
+		// hash,mime filled on load
+		_id : '4',
+		hash : 'pouchlocalfilesystem_4',
+		phash : 'pouchlocalfilesystem_3',
+		path : ['pouchlocalfilesystem_1','pouchlocalfilesystem_3'],
+		locked : 0,
+		mime : 'directory',
+		type: 'directory',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'downloads',
+		// hash,mime filled on load
+		_id : '5',
+		hash : 'pouchlocalfilesystem_5',
+		phash : 'pouchlocalfilesystem_4',
+		path : ['pouchlocalfilesystem_1','pouchlocalfilesystem_3','pouchlocalfilesystem_4'],
+		locked : 0,
+		mime : 'directory',
+		type: 'directory',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'blahhere.txt',
+		// hash,mime filled on load
+		_id : '6',
+		hash : 'pouchlocalfilesystem_6',
+		phash : 'pouchlocalfilesystem_5',
+		path : ['pouchlocalfilesystem_1','pouchlocalfilesystem_3','pouchlocalfilesystem_4','pouchlocalfilesystem_5',],
+		locked : 0,
+		mime : 'text/plain',
+		type: 'file',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	},
+	{
+		name:'blahthere.txt',
+		// hash,mime filled on load
+		_id : '7',
+		hash : 'pouchlocalfilesystem_7',
+		phash : 'pouchlocalfilesystem_1',
+		path : ['pouchlocalfilesystem_1'],
+		locked : 0,
+		mime : 'text/plain',
+		type: 'file',
+		read : 1,
+		write:1,
+		size :0,
+		ts:0,
+	}
+	]});
+	
+	
+	return {db:db,collection:b};
+}
+  
+$(document).ready(function() { 
+	i=initPouch();	
+	
+	
+/*
+i.db.query(
+		{map: function(doc) { 
+			if(doc.title) { 
+				emit(doc.title, null);
+			}
+		}}, 
+		{reduce: false}, 
+		function(err, response) { console.log('query',err,response) }
+);
+//	db.bulkDocs({docs:[{'_id':'paul'},{'_id':'poll'},{'_id':'pill'}]})
+
+	// CREATE RECORDS
+posts=[];
+for (i=10; i< 15; i++) {
+	a=new Post({'_id':'janey'+i,'title':'my new toy'});
+	//a.save();
+	posts.push(a);
+}
+console.log('update',posts);
+	// UPDATE RECORDS
+$.each(posts,function(key,value) {
+	value.set('title','a new title '+key);
+	value.save();
+});
+{
+	   "_id": "_design/filesystem",
+	   "_rev": "4-2d9d75bdb3c860c2e7fb7a45a37762ae",
+	   "language": "javascript",
+	   "views": {
+		   "folders": {
+			   "map": "function(doc) {\n  if (doc.mime=='folder' && doc.phash) {\n\temit([doc.phash,doc.hash], doc);\n  } else if (doc.mime=='folder') {\n\temit([doc.hash,0], doc);\n  }\n}"
+		   }
+	   }
+	}
+	
+*/	// SEARCH RECORDS
+//console.log(b.where());
+
+	// DELETE RECORDS
+
+
+
+	//b.on('sync',function() {
+	//	console.log('posts sync',b.where());
+	//})
+});  
+</script>
+
+
+
+<div >
+stuff here see log
+</div>

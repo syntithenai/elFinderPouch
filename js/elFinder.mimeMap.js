@@ -54,6 +54,7 @@ MimeConverter.extensionMapping={'epub':'application/epub+zip',
 'csv':'text/csv',
 'html htm':'text/html',
 'txt text':'text/plain',
+'sql':'text/sql',
 'vcard':'text/vcard',
 'mp4 mp4v mpg4':'video/mp4',
 'mpeg mpg mpe m1v m2v':'video/mpeg',
@@ -84,5 +85,13 @@ MimeConverter.lookupMime = function(fileName) {
 	});
 	var fileParts=fileName.split(".");
 	var extension=fileParts[fileParts.length-1];
-	return lookup[extension];
+	var ret='';
+	if (lookup[extension] && lookup[extension].length>0) {
+		ret=lookup[extension];
+	} else {
+		// treat as binary
+		ret='application/unknown';
+	}
+	console.log('LOOKUP MIME',fileName,ret);
+	return ret;
 }

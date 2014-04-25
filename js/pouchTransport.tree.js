@@ -5,37 +5,38 @@ pouchTransport.tree = {
 
 	// OK
 	getRootsAndSubfolders : function() {
-	console.log('roots and subfolders');
+	//console.log('roots and subfolders');
 		var mDfr=$.Deferred();
 		var volumes=pouchTransport.tree.configuredRoots();
 		var promises=[];
 		$.each(volumes,function(key,value) {
 			var db=pouchTransport.utils.getDatabase(value.hash);
-			console.log('DD',value);
-			var dfr=$.Deferred();
-			db.query(
-				function(doc) {
-					if (doc.type=='directory'){
-						emit(doc.phash,doc);
+			if (db) {
+				//console.log('DD',value);
+				var dfr=$.Deferred();
+				db.query(
+					function(doc) {
+						if (doc.type=='directory'){
+							emit(doc.phash,doc);
+						}
+					},
+					{key:value.hash},
+					function(err,response) {
+						if (err) {
+							console.log(err)
+							//dfr.reject();
+							dfr.resolve();
+						} else if (response) {
+						//	console.log('VOL Q',response);
+							dfr.resolve(response.rows);
+						}
 					}
-				},
-				{key:value.hash},
-				function(err,response) {
-					if (err) {
-						console.log(err)
-						//dfr.reject();
-						dfr.resolve();
-					} else if (response) {
-						console.log('VOL Q',response);
-						dfr.resolve(response.rows);
-					}
-				}
-			);
-			promises.push(dfr);
+				);
+				promises.push(dfr);
+			}
 		});
-		console.log('roots and subfolders MID' );
 		$.when.apply($,promises).then(function() {
-			console.log('all subfolders',arguments);
+		//	console.log('all subfolders',arguments);
 			var volumeChildren=[];
 			$.each(arguments,function(key,value) {
 				$.each(value,function(k,v) {
@@ -43,18 +44,19 @@ pouchTransport.tree = {
 					volumeChildren.push(v.value);
 				});
 			});
-			console.log('combo kids',volumeChildren);
+			//console.log('combo kids',volumeChildren);
 			mDfr.resolve(volumes.concat(volumeChildren));
 		});
 		return mDfr;
 	},
 	//OK
 	getChildren : function(target) {
-		var db=pouchTransport.utils.getDatabase(target);
 		var targetId=pouchTransport.utils.keyFromHash(target);
-		console.log('getChildren',targetId,target);
+		var volume=pouchTransport.utils.volumeFromHash(target);
+		console.log('getChildren',targetId,target,volume);
+		var db=pouchTransport.utils.getDatabase(target);
 		var dfr=$.Deferred();
-		if (targetId.length>0) {
+		if (db && targetId.length>0) {
 			db.query(
 				function(doc) {
 					if (doc.type=='directory' ||  doc.type=='file') {
@@ -87,7 +89,7 @@ pouchTransport.tree = {
 		var targetId=pouchTransport.utils.keyFromHash(target);
 		//console.log('getChildren',targetId,target);
 		var dfr=$.Deferred();
-		if (targetId.length>0) {
+		if (db && targetId.length>0) {
 			db.query(
 				function(doc) {
 					if (doc.type=='directory') {
@@ -120,7 +122,7 @@ pouchTransport.tree = {
 		var db=pouchTransport.utils.getDatabase(target);
 		//console.log('getTree',targetId,target);
 		var dfr=$.Deferred();
-		if (targetId.length>0) {
+		if (db && targetId.length>0) {
 			db.query(
 				function(doc) {
 					if (doc.type=='directory' || doc.type=='file') {
@@ -185,40 +187,43 @@ pouchTransport.tree = {
 	},
 	getAllChildren : function(target) {
 		var db=pouchTransport.utils.getDatabase(target);
+		var masterDfr=$.Deferred();
+		
 		var getAllChildrenRecursive = function(target) {
-			//console.log('get all children',target);
+			console.log('get all children',target);
 		
 			var dfr=$.Deferred();
-			db.query(
-				function(doc) {
-					if (doc.type=='file' || doc.type== 'directory') {
-						emit(doc.phash,doc);
-					}
-				},
-				{key:target},
-				function(err,response) {
-					//console.log('response',response);
-					var promises=[];
-					var all=[];
-					$.each(response.rows,function(k,row) {
-						promises.push(getAllChildrenRecursive(row.value.hash));
-						all.push(row.value);
-					});
-					$.when.apply($,promises).then(function() {
-						//console.log('args',arguments);
-						$.each(arguments,function(argument,items) {
-							$.each(items,function(ik,item) {
-								all.push(item);
-							});
+			if (db) {
+				db.query(
+					function(doc) {
+						if (doc.type=='file' || doc.type== 'directory') {
+							emit(doc.phash,doc);
+						}
+					},
+					{key:target},
+					function(err,response) {
+						console.log('response',response);
+						var promises=[];
+						var all=[];
+						$.each(response.rows,function(k,row) {
+							promises.push(getAllChildrenRecursive(row.value.hash));
+							all.push(row.value);
 						});
-						//console.log('med res',all);
-						dfr.resolve(all);
-					});
-				}
-			);
+						$.when.apply($,promises).then(function() {
+							console.log('args',arguments);
+							$.each(arguments,function(argument,items) {
+								$.each(items,function(ik,item) {
+									all.push(item);
+								});
+							});
+							console.log('med res',all);
+							dfr.resolve(all);
+						});
+					}
+				);
+			}
 			return dfr;
 		}
-		var masterDfr=$.Deferred();
 		$.when(getAllChildrenRecursive(target)).then(function() {
 			var all=[];
 			$.each(arguments,function(argument,items) {
@@ -233,47 +238,50 @@ pouchTransport.tree = {
 	},
 	getRootline : function(target) {
 		var db=pouchTransport.utils.getDatabase(target);
-		var targetId=pouchTransport.utils.keyFromHash(target);
-		//console.log('get rootline',targetId);
-		var getRootlineRecursive = function(targetId,rootLine) {
-			var dfr=$.Deferred();
-			//console.log('get rootline recursive',targetId,rootLine);
-			if (typeof rootLine =='undefined') rootLine=[];
-			// lookup targetId
-			db.query(
-				function(doc) {
-					emit(doc._id,doc);
-				},
-				{key:targetId},
-				function(err,response) {
-					//console.log('query done',err,response);
-					// if parent reference, recurse
-					if (response.rows && response.rows[0]&& response.rows[0].value && response.rows[0].value.phash) {
-						//console.log('have hash now',rootLine);
-						$.when(getRootlineRecursive(pouchTransport.utils.keyFromHash(response.rows[0].value.phash),rootLine)).then(function(iRootLine) {
-							response.rows[0].value.dirs=1;
-							iRootLine.push(response.rows[0].value);
-							//console.log('coming back up',iRootLine);
-							dfr.resolve(iRootLine);
-						});
-					} else {
-						if (response.rows && response.rows[0]&& response.rows[0].value) {
-							response.rows[0].value.dirs=1;
-							rootLine.push(response.rows[0].value);
-						}
-						dfr.resolve(rootLine);
-					}
-				}
-			);
-			return dfr;
-		}
-		
 		var masterDfr=$.Deferred();
-		if (targetId) {
-			$.when(getRootlineRecursive(targetId)).then(function(rootLine) {
-				//console.log('got rootline recursive',targetId,rootLine);
-				masterDfr.resolve(rootLine);
-			});
+			
+		if (db) {
+			var targetId=pouchTransport.utils.keyFromHash(target);
+			//console.log('get rootline',targetId);
+			var getRootlineRecursive = function(targetId,rootLine) {
+				var dfr=$.Deferred();
+				//console.log('get rootline recursive',targetId,rootLine);
+				if (typeof rootLine =='undefined') rootLine=[];
+				// lookup targetId
+				db.query(
+					function(doc) {
+						emit(doc._id,doc);
+					},
+					{key:targetId},
+					function(err,response) {
+						//console.log('query done',err,response);
+						// if parent reference, recurse
+						if (response.rows && response.rows[0]&& response.rows[0].value && response.rows[0].value.phash) {
+							//console.log('have hash now',rootLine);
+							$.when(getRootlineRecursive(pouchTransport.utils.keyFromHash(response.rows[0].value.phash),rootLine)).then(function(iRootLine) {
+								response.rows[0].value.dirs=1;
+								iRootLine.push(response.rows[0].value);
+								//console.log('coming back up',iRootLine);
+								dfr.resolve(iRootLine);
+							});
+						} else {
+							if (response.rows && response.rows[0]&& response.rows[0].value) {
+								response.rows[0].value.dirs=1;
+								rootLine.push(response.rows[0].value);
+							}
+							dfr.resolve(rootLine);
+						}
+					}
+				);
+				return dfr;
+			}
+			
+			if (targetId) {
+				$.when(getRootlineRecursive(targetId)).then(function(rootLine) {
+					//console.log('got rootline recursive',targetId,rootLine);
+					masterDfr.resolve(rootLine);
+				});
+			}
 		}
 		return masterDfr;
 	},
@@ -281,7 +289,7 @@ pouchTransport.tree = {
 		var db=pouchTransport.utils.getDatabase(target);
 		//console.log('getTarget',targetId);
 		var dfr=$.Deferred();
-		if (target.length>0) {
+		if (db && target.length>0) {
 			db.query(
 				function(doc) {
 					if (doc.type=='directory' || doc.type=='file') {
@@ -322,7 +330,7 @@ pouchTransport.tree = {
 				locked : 0,mime : 'directory' ,type : 'directory',dirs:1,read : 1,locked:1, write:1,size :0,ts:Date.now()
 			});
 		});
-		console.log('configured roots',roots);
+		//console.log('configured roots',roots);
 		return roots;
 	},
 	mashResults : function(items) {

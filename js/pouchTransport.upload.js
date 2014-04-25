@@ -2,7 +2,7 @@ if (pouchTransport=='undefined') pouchTransport={};
 pouchTransport.upload = function(a,fm) {
 	var e=a.event;
 	//var directoryHash={};
-	//console.log('upload files',a,e);
+	console.log('upload files',a,e);
 	function traverseFileTree(item, path,phash) {
 		var dfr=$.Deferred();
 		path = path || "";
@@ -59,7 +59,7 @@ pouchTransport.upload = function(a,fm) {
 		} else if (item.isFile) {
 			// Get file
 			item.file(function(file) {
-				//console.log("File: " + path + file.name,file);
+				console.log("File: " + path + file.name,file);
 				 var reader = new FileReader();
 				// Closure to capture the file information.
 				reader.onload = (function(fileRef) {
@@ -75,42 +75,50 @@ pouchTransport.upload = function(a,fm) {
 							name: fileRef.name,
 							phash : phash,
 							size : fileRef.size,
-							locked : 0,mime : fileRef.type ,type : 'file',read : 1,write:1,size :0,ts:Date.now()
+							locked : 0,mime : MimeConverter.lookupMime(fileRef.name) ,type : 'file',read : 1,write:1,ts:Date.now()
 						};
-						// TODO check for name conflict and rename if required
-						db.post(toAdd,function(err,postResponse) {
-							toAdd._id=postResponse.id;
-							toAdd._rev=postResponse.rev;
-							toAdd.hash=pouchTransport.utils.volumeFromHash(phash)+'_'+toAdd._id;
-							db.put(toAdd,function(err,putResponse) {
-								//console.log('responses',postResponse,putResponse);
+						// around 30M seems fine
+						if (pouchTransport.utils.isLocalPouch(phash) && fileRef.size>30241968) {
+							alert('File '+fileRef.name+' is too large for a local pouch database');
+							dfr.reject('File Too big');
+						} else {
+							// TODO check for name conflict and rename if required
+							console.log('SAVE FILE to db',toAdd);
+							db.post(toAdd,function(err,postResponse) {
 								if (err) {
-									console.log('ERROR',err);
+									console.log("ERROR",err);
 								} else {
-									db.putAttachment(toAdd._id,'fileContent',putResponse.rev,new Blob([reader.result]),'',function(err,attResponse) {
+									toAdd._id=postResponse.id;
+									toAdd._rev=postResponse.rev;
+									toAdd.hash=pouchTransport.utils.volumeFromHash(toAdd.phash)+'_'+postResponse.id;
+									console.log('update with id',toAdd,postResponse);
+									db.put(toAdd,postResponse.revision,function(err,putResponse) {
+										console.log('SAVED FILE responses',postResponse,putResponse,arguments);
 										if (err) {
 											console.log('ERROR',err);
-										} else {											
-											var cwd={hash:fm.cwd().hash};
-											//if (options.data.cmd=='mkfile') cwd={hash:toAdd.phash};
-											var ret={cwd:cwd,added:[toAdd]};
-											//console.log('f',ret);
-											dfr.resolve(ret);
+										} else {
+											console.log(reader.result)
+											db.putAttachment(toAdd._id,'fileContent',putResponse.rev,new Blob([reader.result]),toAdd.mime,function(err,attResponse) {
+												if (err) { 
+													console.log('ERROR',err);
+												} else {											
+													var cwd={hash:fm.cwd().hash};
+													//if (options.data.cmd=='mkfile') cwd={hash:toAdd.phash};
+													var ret={cwd:cwd,added:[toAdd]};
+													console.log('f',ret,reader.result,attResponse);
+													dfr.resolve(ret);
+												}
+											});
+											console.log('resolve subpromise file',toAdd);
+											dfr.resolve([toAdd]);
 										}
 									});
-									//console.log('resolve subpromise file',toAdd);
-									dfr.resolve([toAdd]);
 								}
 							});
-						});
+						}
 					}
 				})(file);
-				var mimeParts=file.type.split("/");
-				if (mimeParts[0]=='image') {
-					reader.readAsDataURL(file);
-				} else {
-					reader.readAsText(file);
-				}
+				reader.readAsArrayBuffer(file);
 			})
 		}
 		return dfr;
@@ -125,16 +133,16 @@ pouchTransport.upload = function(a,fm) {
 	
 	//var masterDfr=$.Deferred();
 	var entries;
-	//console.log('start',e)
 	// DND   yay dataTransfer
 	if (e.dataTransfer && e.dataTransfer.items) {
+		console.log('start DND',e.dataTransfer)
 		entries = e.dataTransfer.items;
 		for (var i = 0, f; f = entries[i]; i++) {
 			promises.push(traverseFileTree(entries[i].webkitGetAsEntry()));
 		}
 		// wait for uploads per item (recursively(
 		$.when.apply($,promises).then(function(res) {
-			//console.log('resolve.master args',arguments);
+			console.log('resolve.master args',arguments);
 			var final=[];
 			$.each(Array.prototype.slice.call(arguments, 0),function(k,arg) {
 				final.push(arg);
@@ -156,7 +164,7 @@ pouchTransport.upload = function(a,fm) {
 	// input type=file with or without webkitdirectory for folder selection				
 	} else if (e.target && e.target.files) {
 		entries = e.target.files;
-		//console.log('input upload',entries);
+		console.log('input upload',entries);
 		// collate folders
 		var folders={};
 		var columns={};
@@ -179,13 +187,15 @@ pouchTransport.upload = function(a,fm) {
 				}
 			}
 		});
-		//console.log('collated folders',folders);
+		console.log('collated folders',folders);
 		// create them all and get ids table
 		$.when.apply($,function() {
 			var promises=[];
-			$.each(folders,function(folderPath,folder) {
+			$.each(arguments,function(folderPath,folder) {
 				// save folder
 				var dfr=$.Deferred();
+				console.log('dbget',folderPath,folder);
+				var db=pouchTransport.utils.getDatabase(folder.hash);
 				db.post(folder,function(err,response) {
 					//console.log('response',response,folder);
 					var ret=[folderPath,folder,response];
@@ -196,11 +206,11 @@ pouchTransport.upload = function(a,fm) {
 			return promises;
 		// then update them all 
 		}()).then(function() {
-			//console.log('created folders',folders,arguments);
+			console.log('created folders now update with phash',folders,arguments);
 			var promises=[];
 			$.each(arguments,function(k,folderDetails) {
 				var dfr=$.Deferred();
-				//console.log(folderDetails);
+				console.log(folderDetails);
 				folderPath=folderDetails[0];
 				folderItem=folderDetails[1];
 				folderResponse=folderDetails[2];
@@ -211,52 +221,62 @@ pouchTransport.upload = function(a,fm) {
 				else folderItem.phash=fm.cwd().hash;
 				delete folderItem.parent;
 				//console.log('AAA',folderItem); //,folderItem.parent,folders);
+				var db=pouchTransport.utils.getDatabase(folderItem.hash);
 				db.put(folderItem,function(err,response) {
 					dfr.resolve(folderItem);
 				});
 				promises.push(dfr);
 			});
 			$.when.apply($,promises).then(function() {
-				//console.log('now I can create the files',entries,arguments);
+				console.log('now I can create the files',entries,arguments);
 				$.each(entries,function(key,file) {
-					var parts=file.webkitRelativePath.split("/");
+					var parts;
+					if (file.webkitRelativePath) parts=file.webkitRelativePath.split("/");
+					else parts=[];
 					if (parts[parts.length-1] !='.' ) {
 						var path=parts.slice(0,parts.length-1).join("/");
 						var phash=fm.cwd().hash;
-						if (folders[parts.slice(0,parts.length-1).join("/")]) phash=pouchTransport.utils.volumeFromHash(folders[folderItem.parent].hash)+'-'+folders[parts.slice(0,parts.length-1).join("/")]._id;
+						console.log(path,folders);
+						// assign phash based on parent lookup in folders
+						if (folders[path] && folders[path].parent) {
+							phash=pouchTransport.utils.volumeFromHash(folders[folders[path].parent].hash)+'_'+folders[path]._id;
+						}
+						console.log('PHAHS',phash)
 						var reader = new FileReader();
 						reader.onload = (function(fileRef) {
 							return function(e) {
-								var newFile={name:parts[parts.length-1],phash:phash,locked : 0,mime : file.type,type : 'file',read : 1,write:1,ts:Date.now(),size : file.size};
-								db.post(newFile,function(err,response) {
-									newFile._id=response.id;
-									newFile.hash=pouchTransport.utils.volumeFromHash(newFile.phash)+'_'+response.id;
-									newFile._rev=response.rev;
-									db.put(newFile,function(err,putResponse) {
-										// now put file content
-										console.log('donw put',err,putResponse,newFile);
-										if (err) {
-											console.log('ERROR',err);
-										} else {
-											db.putAttachment(newFile._id,'fileContent',putResponse.rev,new Blob([reader.result]),'',function(err,attResponse) {
-												//console.log('resolve subpromise file',newFile);
-												fm.request({
-													data   : {cmd  : 'open', target : fm.cwd().hash},
-													notify : {type : 'open', cnt : 1, hideCnt : true},
-													syncOnFail : true
+								var newFile={name:parts[parts.length-1],phash:phash,locked : 0,mime : MimeConverter.lookupMime(parts[parts.length-1]),type : 'file',read : 1,write:1,ts:Date.now(),size : file.size};
+								if (pouchTransport.utils.isLocalPouch(phash) && fileRef.size>30241968) {
+									alert('File '+fileRef.name+' is too large for a local pouch database');
+									dfr.reject('File Too big');
+								} else {
+									var db=pouchTransport.utils.getDatabase(phash);
+									db.post(newFile,function(err,response) {
+										newFile._id=response.id;
+										newFile.hash=pouchTransport.utils.volumeFromHash(newFile.phash)+'_'+response.id;
+										newFile._rev=response.rev;
+										newFile.type='file';
+										db.put(newFile,function(err,putResponse) {
+											// now put file content
+											console.log('donw put',err,putResponse,newFile);
+											if (err) {
+												console.log('ERROR',err);
+											} else {
+												db.putAttachment(newFile._id,'fileContent',putResponse.rev,new Blob([reader.result]),newFile.mime,function(err,attResponse) {
+													console.log('resolve subpromise file',newFile);
+													fm.request({
+														data   : {cmd  : 'open', target : fm.cwd().hash},
+														notify : {type : 'open', cnt : 1, hideCnt : true},
+														syncOnFail : true
+													});
 												});
-											});
-										}
+											}
+										});
 									});
-								});
+								}
 							}
 						})(file);
-						var mimeParts=file.type.split("/");
-						if (mimeParts[0]=='image') {
-							reader.readAsDataURL(file);
-						} else {
-							reader.readAsText(file);
-						}
+						reader.readAsArrayBuffer(file);
 					}
 				});
 			});

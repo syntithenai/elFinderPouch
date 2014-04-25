@@ -1,0 +1,37 @@
+<script src="../jquery/jquery-1.8.1.min.js"></script>
+<script src="pouchdb.js"></script>
+<script>
+
+$(document).ready(function() { 
+
+	//video.webkitSourceAppend(uint8Array);
+	function hasMediaSource() {
+	  return !!(window.MediaSource || window.WebKitMediaSource);
+	}
+
+	if (hasMediaSource()) {
+	  // Ready to (html5)rock!
+	  // alert("yay");
+	} else {
+	  alert("Bummer. Your browser doesn't support the MediaSource API!");
+	}
+	
+	
+	window.MediaSource = window.MediaSource || window.WebKitMediaSource;
+	function onSourceOpen(e) {
+	  // this.readyState === 'open'. Add a source buffer that expects webm chunks.
+	  sourceBuffer = ms.addSourceBuffer('video/webm; codecs="vorbis,vp8"');
+	}
+
+	var ms = new MediaSource();
+	ms.addEventListener('webkitsourceopen', onSourceOpen.bind(ms), false);
+	var sourceBuffer = null;
+
+	// Use MediaSource to supply video data.
+	var video = document.querySelector('video');
+	video.src = window.URL.createObjectURL(ms); // blob URL pointing to the MediaSource.	
+}
+);
+</script>
+<video controls autoplay></video>
+this is it

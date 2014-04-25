@@ -956,8 +956,8 @@ window.elFinder = function(node, opts) {
 				} else if (!self.validResponse(cmd, response)) {
 					return dfrd.reject('errResponse', xhr);
 				}
-
-				response = self.normalize(response);
+				console.log('resopnse',response);
+				//response = self.normalize(response);
 
 				if (!self.api) {
 					self.api    = response.api || 1;
