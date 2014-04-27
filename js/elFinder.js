@@ -6,7 +6,7 @@
  **/
 window.elFinder = function(node, opts) {
 	this.time('load');
-	//console.log('load',this);
+	console.log('load elfinder',opts);
 	var self = this,
 		
 		/**

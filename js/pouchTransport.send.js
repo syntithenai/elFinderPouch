@@ -7,22 +7,103 @@ pouchTransport.send = function(options,fm) {
 	//return d;
 	
 	switch (options.data.cmd) {
+		case 'paste' :
+		var targets=options.data.targets;
+		var dst=options.data.dst;
+		var src=options.data.src;
+		if (targets && dst && src) {
+			var dbsource=pouchTransport.utils.getDatabase(src);
+			var dbdest=pouchTransport.utils.getDatabase(dst);
+			pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
+				pouchTransport.utils.fixNameConflicts(targetRecords,dst).then(function() {
+					if (options.data.cut==1 && pouchTransport.utils.volumeFromHash(src)==pouchTransport.utils.volumeFromHash(dst)) {
+						console.log('move');
+						// just a move, update targets to have new parents
+						var promises=[];
+						$.each(targetRecords,function(k,record) {
+							var dfr=$.Deferred();
+							promises.push(dfr);
+							record.phash=dst;
+							dbsource.put(record,function() {
+								dfr.resolve();
+							});
+						});
+						$.when.apply($,promises).then(function() {
+							d.resolve({added:targetRecords,removed:targetRecords});
+						});
+					} else {
+						// full copy
+						console.log('full copy');
+						pouchTransport.tree.getAllFilesAndDirectoriesInside(targets).then(function(records) {
+							$.each(records,function(k,fileOrDirectory) {
+								console.log('paste record',fileOrDirectory);
+								
+							});
+							d.resolve();
+						});
+						
+					}
+				})
+			});
+		}
+		
+		break;
+	
 		case 'archive' :
-			console.log('Zip',options.data)
+			console.log('Zip',options.data);
+			//console.log('do archive',options.data.targets,type);
+			if (options.data.targets) {
+				pouchTransport.tree.getAllFilesInside(options.data.targets).then(function(files) {
+					pouchTransport.utils.zipFiles(
+						files, 
+						function(file) {
+							return pouchTransport.utils.getAttachment(file.hash);
+						},
+						function() {console.log('init');},
+						function(file) {
+							console.log('add',file);
+						
+						},
+						function() {console.log('prgress');},
+						function(final) {
+							console.log('done',final)
+							pouchTransport.utils.mkSomething('mkfile','archive.zip',options.data.dst).then(function(newFile) {
+								pouchTransport.utils.putAttachment(newFile.hash,final);
+								d.resolve({added:[newFile]});
+							});
+							
+						}
+					);
+				});
+			}
+			break;
+		
 		case 'extract' :
-			console.log('unZip',options.data)
+			console.log('unZip',options.data);
+			pouchTransport.utils.getAttachment(options.data.target).then(function(attachmentData) {
+				pouchTransport.utils.unzipFiles(
+					attachmentData,
+					function(file) {
+						console.log('fileunzipped',file);
+					},
+					function() {
+						console.log('fileunzipped final');
+				})
+			})
+			break;
 		case 'tree' :
 			pouchTransport.tree.getTree(options.data.target).then(function(items) {
 				var ret={tree:items};
 				d.resolve(ret);
 			});
+			break;
 		case 'parents' :
 			pouchTransport.tree.getParentsWithSiblings(options.data.target).then(function(items) {
 				items=pouchTransport.tree.configuredRoots().concat(items);
 				var ret={tree:items};
 				d.resolve(ret);
 			});
-			
+			break;
 			// parents to root and siblings and siblings of rootline parents
 			// returns {tree:[]}
 		case 'ls' :
@@ -33,7 +114,9 @@ pouchTransport.send = function(options,fm) {
 			var ret={};
 			
 			if (options.data.init) {
-				$.extend(ret,{api:"2.0"});
+				$.extend(ret,
+					{"api":"2.0","options": {"archivers": { "create"  : [ "application/zip"],"extract" : ["application/zip"]}}}
+				);
 				if (target.length == 0) {
 					target=pouchTransport.utils.volumeFromHash(target)+'_filesystemroot';
 				}
@@ -84,51 +167,12 @@ pouchTransport.send = function(options,fm) {
 		case 'mkfile' :
 		case 'mkdir' :
 		//	console.log('MK??',options.data)
-			
-			if (options.data.name && options.data.target) {
-			//	console.log('MK have pars')
-			
-				var toAdd={
-					name: options.data.name,
-					phash : options.data.target,
-					locked : 0,
-					mime : 'directory',
-					type : 'directory',
-					read : 1,
-					write:1,
-					size :0,
-					ts:Date.now()
-				};
-				if (options.data.cmd=='mkfile') {
-					// TODO set mime by file extension
-					toAdd.mime=MimeConverter.lookupMime(toAdd.name);
-					toAdd.type='file';
-				} 
-				var db=pouchTransport.utils.getDatabase(toAdd.phash);
-			//	console.log('MK ',toAdd,db)
-				if (db) {
-					db.post(toAdd,function(err,postResponse) {
-						if (err) {
-							console.log('ERROR',err);
-						} else {
-							toAdd._id=postResponse.id;
-							toAdd._rev=postResponse.rev;
-							toAdd.hash=pouchTransport.utils.volumeFromHash(options.data.target)+'_'+toAdd._id;
-							db.put(toAdd,function(err,putResponse) {
-								if (err) {
-									console.log('ERROR',err);
-									d.reject();
-								} else {
-									var cwd={hash:toAdd.hash};
-									if (options.data.cmd=='mkfile') cwd={hash:toAdd.phash};
-									var ret={cwd:cwd,added:[toAdd]};
-									d.resolve(ret);
-								}
-							});
-						}
-					});
-				}
-			}
+			pouchTransport.utils.mkSomething(options.data.cmd,options.data.name,options.data.target).then(function(toAdd) {
+				var cwd={hash:toAdd.hash};
+				if (options.data.cmd=='mkfile') cwd={hash:toAdd.phash};
+				var ret={cwd:cwd,added:[toAdd]};
+				d.resolve(ret);
+			});;
 			break;
 		case 'rename' :
 			//console.log('rename');
@@ -268,60 +312,25 @@ pouchTransport.send = function(options,fm) {
 			break;
 		case 'get' :
 			pouchTransport.utils.getAttachment(options.data.target).then(function(bs) {
-				d.resolve({content:bs});
+				if (bs) {
+					var br=new FileReader();
+					br.onload=function(data) {
+						console.log('GET',data.target.result);
+						d.resolve({content:data.target.result});
+					}
+					br.readAsText(bs);
+				// fail to empty default
+				} else d.resolve({content:''});
 			});
 			
 			break;
 		case 'put' :
-			var db=pouchTransport.utils.getDatabase(options.data.target);
-			// TODO set file size
-			if (db && options.data.target && options.data.content) {
-				db.get(pouchTransport.utils.keyFromHash(options.data.target),function(err,response) {
-					response.size=options.data.content.length;
-					response.ts=Date.now();
-					db.put(response,function(err,putResponse) {
-						db.putAttachment(pouchTransport.utils.keyFromHash(options.data.target),'fileContent',response._rev,new Blob([options.data.content]),response.mime,function(err,attResponse) {
-							d.resolve({changed:[response]});
-						});
-					});
-				});
-			}
+			pouchTransport.utils.putAttachment(options.data.target,options.data.content).then(function(response) {
+				ret={changed:[response]};
+				d.resolve(ret);
+			});
 			break;
-		case 'paste' :
-			var db=pouchTransport.utils.getDatabase(options.data.target);
-					
-			if (options.data.target && options.data.dst && options.data.src) {
-				var dbsource=pouchTransport.utils.getDatabase(options.data.target);
-				var dbdest=pouchTransport.utils.getDatabase(options.data.dst);
-				var deferreds=[];
-				$.each(options.data.targets,function(key,val) {
-					var df=new $.Deferred();
-					// easy case update parent references
-					if (options.data.cut) {
-						db.get(pouchTransport.utils.keyFromHash(val),function (err,oval) {
-							oval.phash=options.data.dst;
-							db.put(oval,function(err,response) {
-								df.resolve(oval);
-							});
-						});
-					// otherwise we have to recursively copy all the selected elements
-					} else {
-						
-					}
-					deferreds.push(df);
-				});
-				return deferreds;
-			}
-			if (options.data.targets) {
-				$.when.apply($,createFiles()).then(
-					function(res) {  
-						d.resolve({added:[res]}); 
-					}
-				);
-			} 
-			
-			break;
-		
+	
 		/*case 'tree' :
 		
 			break;

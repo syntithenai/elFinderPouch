@@ -26,7 +26,7 @@ $(document).ready(function() {
 	
 	$('#finder').elfinder({
 		// requestType : 'post',
-
+		//archivers:{'create':['application/zip']},
 		// url : 'php/connector.php',
 		url : 'php/connector.php',
 		transport : pouchTransport,
@@ -38,7 +38,7 @@ $(document).ready(function() {
 			'cut', 'paste', 'edit', 'extract', 'archive', 'search', 'info', 'view', 'help',
 			'resize', 'sort'
 		],
-		contextmenu : {
+		/*contextmenu : {
 			// navbarfolder menu
 			navbar : ['open', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'info'],
 
@@ -88,7 +88,7 @@ $(document).ready(function() {
 					}
 				}]
 			}
-		}
+		}*/
 		
 		
 	});

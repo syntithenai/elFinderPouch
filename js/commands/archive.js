@@ -57,7 +57,7 @@ elFinder.prototype.commands.archive = function() {
 		}
 
 		return fm.request({
-			data       : {cmd : 'archive', targets : this.hashes(hashes), type : mime},
+			data       : {cmd : 'archive', targets : this.hashes(hashes), type : mime,dst:fm.cwd().hash},
 			notify     : {type : 'archive', cnt : 1},
 			syncOnFail : true
 		});

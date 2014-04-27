@@ -8,7 +8,6 @@
 'resize' : //- modify image file (resize/crop/rotate)
 'netmount' : //- mount network volume during user session. Only ftp now supported.
 
-
 'open' : //- open directory and initializes data when no directory is defined (first iteration)
 'tree' : //- return child directories
 'parents' : //- return parent directories and its subdirectory childs

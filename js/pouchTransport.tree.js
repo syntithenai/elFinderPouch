@@ -185,6 +185,80 @@ pouchTransport.tree = {
 		});
 		return dfr;
 	},
+	getAllFilesAndDirectoriesInside : function(targets) {
+		console.log('looking for files inside',targets);
+		var mdfr=$.Deferred();
+		var promises=[];
+		pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
+			var fileTargets=[];
+			var folderTargets=[]
+			$.each(targets,function(k,target) {
+				if (target.type=='file' || target.type=='directory') fileTargets.push(target);
+				else folderTargets.push(target);
+			});
+			$.each(folderTargets,function(key,hash) {
+				var dfr=$.Deferred();
+				promises.push(dfr);
+				pouchTransport.tree.getAllChildren(hash).then(function(subChildren) {
+					dfr.resolve(subChildren);
+				});
+			});
+			$.when.apply($,promises).then(function() {
+				final=[];
+				$.each(arguments,function(key,subChildren) {
+					$.each(subChildren,function (k,v) {
+						console.log('looking for files',v.type,v);
+						if (v.type=='file' || target.type=='directory') final.push(v);
+					});
+				});
+				console.log('final children',final,fileTargets);
+				$.each(fileTargets,function(k,v) {
+					final.unshift(v);
+				});
+				//`fileTargets.concat(final);
+				console.log('loaded targets resolve with ',final);
+				mdfr.resolve(final);
+			});
+		});
+		return mdfr;
+	},
+	getAllFilesInside : function(targets) {
+		console.log('looking for files inside',targets);
+		var mdfr=$.Deferred();
+		var promises=[];
+		pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
+			var fileTargets=[];
+			var folderTargets=[]
+			$.each(targets,function(k,target) {
+				if (target.type=='file') fileTargets.push(target);
+				else folderTargets.push(target);
+			});
+			$.each(folderTargets,function(key,hash) {
+				var dfr=$.Deferred();
+				promises.push(dfr);
+				pouchTransport.tree.getAllChildren(hash).then(function(subChildren) {
+					dfr.resolve(subChildren);
+				});
+			});
+			$.when.apply($,promises).then(function() {
+				final=[];
+				$.each(arguments,function(key,subChildren) {
+					$.each(subChildren,function (k,v) {
+						console.log('looking for files',v.type,v);
+						if (v.type=='file') final.push(v);
+					});
+				});
+				console.log('final children',final,fileTargets);
+				$.each(fileTargets,function(k,v) {
+					final.unshift(v);
+				});
+				//`fileTargets.concat(final);
+				console.log('loaded targets resolve with ',final);
+				mdfr.resolve(final);
+			});
+		});
+		return mdfr;
+	},
 	getAllChildren : function(target) {
 		var db=pouchTransport.utils.getDatabase(target);
 		var masterDfr=$.Deferred();
@@ -313,6 +387,40 @@ pouchTransport.tree = {
 			);
 		} else {
 			dfr.resolve([]);
+		}
+		return dfr;
+	},
+	getTargets : function(targets) {
+		// assume all targets in same filesystem
+		var dfr=$.Deferred();
+		var db=pouchTransport.utils.getDatabase(targets[0]);
+		if (db) {
+			//console.log('getTarget',targetId);
+			if (db && targets.length>0) {
+				db.query(
+					function(doc) {
+						if (doc.type=='directory' || doc.type=='file') {
+							emit(doc.hash,doc);
+						}
+					},
+					{keys:targets},
+					function(err,response) {
+						if (err) {
+							console.log(err);
+							dfr.reject();
+						} else {
+							//console.log('query target done',err,response,response.rows);
+							var result=[];
+							$.each(response.rows,function(k,v) {
+								result.push(v.value);
+							});
+							dfr.resolve(result);
+						}
+					}
+				);
+			} else {
+				dfr.resolve([]);
+			}
 		}
 		return dfr;
 	},
