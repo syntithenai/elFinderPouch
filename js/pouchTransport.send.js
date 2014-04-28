@@ -7,46 +7,25 @@ pouchTransport.send = function(options,fm) {
 	//return d;
 	
 	switch (options.data.cmd) {
+		case 'duplicate' :
 		case 'paste' :
-		var targets=options.data.targets;
-		var dst=options.data.dst;
-		var src=options.data.src;
-		if (targets && dst && src) {
-			var dbsource=pouchTransport.utils.getDatabase(src);
-			var dbdest=pouchTransport.utils.getDatabase(dst);
-			pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
-				pouchTransport.utils.fixNameConflicts(targetRecords,dst).then(function() {
-					if (options.data.cut==1 && pouchTransport.utils.volumeFromHash(src)==pouchTransport.utils.volumeFromHash(dst)) {
-						console.log('move');
-						// just a move, update targets to have new parents
-						var promises=[];
-						$.each(targetRecords,function(k,record) {
-							var dfr=$.Deferred();
-							promises.push(dfr);
-							record.phash=dst;
-							dbsource.put(record,function() {
-								dfr.resolve();
-							});
-						});
-						$.when.apply($,promises).then(function() {
-							d.resolve({added:targetRecords,removed:targetRecords});
-						});
-					} else {
-						// full copy
-						console.log('full copy');
-						pouchTransport.tree.getAllFilesAndDirectoriesInside(targets).then(function(records) {
-							$.each(records,function(k,fileOrDirectory) {
-								console.log('paste record',fileOrDirectory);
-								
-							});
-							d.resolve();
-						});
-						
-					}
-				})
+		if (options.data.cmd=='duplicate') {
+			console.log('DUP');
+			if (options.data.targets[0]) {
+				console.log('set from first',options.data.targets[0]);
+				pouchTransport.tree.getTarget(options.data.targets[0]).then(function(record) {
+						console.log('got first first',record[0].phash,record);
+					pouchTransport.tree.paste(options.data.targets,record[0].phash,record[0].phash,options.data.cut).then(function(res) {
+						d.resolve(res);
+					});
+				});
+			}
+		} else {
+			pouchTransport.tree.paste(options.data.targets,options.data.src,options.data.dst,options.data.cut).then(function(res) {
+				d.resolve(res);
 			});
 		}
-		
+
 		break;
 	
 		case 'archive' :
@@ -92,7 +71,7 @@ pouchTransport.send = function(options,fm) {
 			})
 			break;
 		case 'tree' :
-			pouchTransport.tree.getTree(options.data.target).then(function(items) {
+			pouchTransport.tree.getChildFolders(options.data.target).then(function(items) {
 				var ret={tree:items};
 				d.resolve(ret);
 			});
@@ -108,7 +87,7 @@ pouchTransport.send = function(options,fm) {
 			// returns {tree:[]}
 		case 'ls' :
 		case 'open' :
-			console.log('OPEN',options.data.target,options.data,options);
+			//console.log('OPEN',options.data.target,options.data,options);
 			// HAVE WE CHOSEN WHERE TO OPEN
 			var target=$.trim(options.data.target);
 			var ret={};
@@ -122,18 +101,18 @@ pouchTransport.send = function(options,fm) {
 				}
 			}
 			pouchTransport.tree.getChildren(target).then(function(items) {
-				console.log('SSSSSSSSSSSSSSSload child dir',items);
+				//console.log('SSSSSSSSSSSSSSSload child dir',items);
 				if (pouchTransport.utils.keyFromHash(target)=='filesystemroot')  {
 					pouchTransport.tree.getRootsAndSubfolders().then(function(rootsAndSubfolders) {
 						ret.files=items; //$.extend([],pouchTransport.tree.mashResults(items.concat(rootsAndSubfolders)));
-						console.log('RSF',rootsAndSubfolders,target,items);
+						//console.log('RSF',rootsAndSubfolders,target,items);
 						$.each(rootsAndSubfolders,function(key,value) {
 							if (value.hash==target) ret.cwd=value;
 						});
 						if (!ret.cwd) ret.cwd=rootsAndSubfolders[0];
 						var a=JSON.stringify(ret);
 						reti=JSON.parse(a);
-						console.log('resolveroot',reti,a);
+						//console.log('resolveroot',reti,a);
 						d.resolve(reti);
 					});
 				} else if (options.data.tree) {
@@ -150,14 +129,14 @@ pouchTransport.send = function(options,fm) {
 							});
 						}
 						if (!ret.cwd) ret.cwd=rootsAndSubfolders[0];
-						console.log('resolveopen tree',ret)
+						//console.log('resolveopen tree',ret)
 						d.resolve(ret);
 					});
 				} else {
 					ret.files=pouchTransport.tree.mashResults(items);
 					pouchTransport.tree.getTarget(target).then(function(val) {
 							ret.cwd=val[0];
-							console.log('resolveopen',ret,items)
+							//console.log('resolveopen',ret,items)
 							d.resolve(ret);
 					});
 				}
@@ -217,7 +196,7 @@ pouchTransport.send = function(options,fm) {
 										$.each(children,function(cKey,child) {
 											db.remove(child)
 										});
-										console.log('RM have kids d');
+										//console.log('RM have kids d');
 										db.remove(target,function(err,doc) {
 											if (err) {
 												console.log('ERROR',err);
@@ -235,12 +214,13 @@ pouchTransport.send = function(options,fm) {
 					return deferreds;
 				}()).then(
 					function() {  
+						console.log('RM FINALLY');
 						d.resolve({removed:options.data.targets}); 
 					}
 				);
 			}
 			break;
-		case 'duplicate' :
+		case 'disduplicate' :
 			// TODO - what about folders RECURSIVE
 			var createFiles=function() {
 				var deferreds=[];
@@ -260,9 +240,11 @@ pouchTransport.send = function(options,fm) {
 								else val.name=val.name+"-"+val._id;
 								//val._rev=resp.rev;
 								db.put(val,function(err,ffresponse) {
-									db.getAttachment(pouchTransport.utils.keyFromHash(val),'fileContent',ffresponse.rev,function(err,aresp) {
-										db.put
-									});
+									if (!pouchTransport.utils.onerror(err)) {
+										db.getAttachment(pouchTransport.utils.keyFromHash(val),'fileContent',ffresponse.rev,function(err,aresp) {
+											//db.put
+										});
+									}
 									df.resolve(val);
 								});
 							});
@@ -315,7 +297,7 @@ pouchTransport.send = function(options,fm) {
 				if (bs) {
 					var br=new FileReader();
 					br.onload=function(data) {
-						console.log('GET',data.target.result);
+						//console.log('GET',data.target.result);
 						d.resolve({content:data.target.result});
 					}
 					br.readAsText(bs);

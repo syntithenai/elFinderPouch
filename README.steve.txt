@@ -5,24 +5,28 @@ In so far as possible the implementation is strictly as a transport layer so tha
 
 
 CURRENT
-zip 
-upload by folder
+BUG ON paste - parents and attachments are ..
+zip - BUG unzip all in same folder
+upload by folder BUG - all in same folder
+paste
 
 BUGS
 
 TODO  release 1
 - paste
-- download needs to do object urls
-- open needs to switch as per my preferences eg default edit
+- download needs to do object urls, create link click
+- open needs to switch as per my preferences eg default view
 - quicklook
 - thumbnails
+- get info (sum sizes /per file)
 - edit form buttons to top of dialog
-
-DREAMS
-- paste
-	- merge
 - elFInder integration back into RTE and svg edit
 - svg edit
+
+DREAMS
+- live sync
+- paste
+	- merge
 - jquery sheet - initially only .sheet.html files
 - encfs lock file
 - modify selection model for touch so ctrl key is not required on tablet
@@ -35,5 +39,12 @@ DREAMS
 - animation editing ajax animator
 - audio editing
 - video editing
+- presentations and layouts
+- music player - playlists ...folders 
 
 
+LOG
+27/4/14
+most of the way through paste
+bugs in zip and upload folder but mostly OK
+looked at mp3 encoding/decoding 

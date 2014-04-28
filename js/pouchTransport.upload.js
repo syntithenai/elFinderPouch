@@ -12,7 +12,7 @@
 pouchTransport.upload = function(a,fm) {
 	var e=a.event;
 	//var directoryHash={};
-	console.log('upload files',a,e);
+	//console.log('upload files',a,e);
 
 	/*******************************************************
 	 * Process upload for <input type=file>
@@ -21,7 +21,7 @@ pouchTransport.upload = function(a,fm) {
 	 *******************************************************/
 	function createFileTree(entries) {
 		var mdfr=$.Deferred();
-		console.log('input upload',entries);
+		//console.log('input upload',entries);
 		// collate folders
 		var folders={};
 		var columns={};
@@ -63,11 +63,11 @@ pouchTransport.upload = function(a,fm) {
 			return promises;
 		// then update them all 
 		}()).then(function() {
-			console.log('created folders now update with phash',folders,arguments);
+			//console.log('created folders now update with phash',folders,arguments);
 			var promises=[];
 			$.each(arguments,function(k,folderDetails) {
 				var dfr=$.Deferred();
-				console.log(folderDetails);
+				//console.log(folderDetails);
 				folderPath=folderDetails[0];
 				folderItem=folderDetails[1];
 				folderResponse=folderDetails[2];
@@ -85,7 +85,7 @@ pouchTransport.upload = function(a,fm) {
 				promises.push(dfr);
 			});
 			$.when.apply($,promises).then(function() {
-				console.log('now I can create the files',entries,arguments);
+				//console.log('now I can create the files',entries,arguments);
 				var epromises=[];
 				$.each(entries,function(key,file) {
 					var edfr=$.Deferred();
@@ -96,7 +96,7 @@ pouchTransport.upload = function(a,fm) {
 					if (parts[parts.length-1] !='.' ) {
 						var path=parts.slice(0,parts.length-1).join("/");
 						var phash=fm.cwd().hash;
-						console.log(path,folders);
+						//console.log(path,folders);
 						// assign phash based on parent lookup in folders
 						
 						if (folders[path] && folders[path].parent && folders[folders[path].parent] && folders[folders[path].parent].hash && folders[path]._id) {
@@ -120,14 +120,14 @@ pouchTransport.upload = function(a,fm) {
 										newFile.type='file';
 										db.put(newFile,function(err,putResponse) {
 											// now put file content
-											console.log('donw put',err,putResponse,newFile);
+											//console.log('donw put',err,putResponse,newFile);
 											if (err) {
 												console.log('ERROR',err);
 												edfr.reject(err);
 											} else {
 												db.putAttachment(newFile._id,'fileContent',putResponse.rev,new Blob([reader.result]),newFile.mime,function(err,attResponse) {
 													edfr.resolve(newFile);
-													console.log('resolve subpromise file',newFile);
+													//console.log('resolve subpromise file',newFile);
 												});
 											}
 										});
@@ -139,7 +139,7 @@ pouchTransport.upload = function(a,fm) {
 					}
 				});
 				$.when.apply($,epromises).then(function() {
-					console.log('ALLD DONE');
+					//console.log('ALLD DONE');
 					mdfr.resolve(arguments);
 					fm.request({
 						data   : {cmd  : 'open', target : fm.cwd().hash},
@@ -217,7 +217,7 @@ pouchTransport.upload = function(a,fm) {
 		} else if (item.isFile) {
 			// Get file
 			item.file(function(file) {
-				console.log("File: " + path + file.name,file);
+				//console.log("File: " + path + file.name,file);
 				 var reader = new FileReader();
 				// Closure to capture the file information.
 				reader.onload = (function(fileRef) {
@@ -241,7 +241,7 @@ pouchTransport.upload = function(a,fm) {
 							dfr.reject('File Too big');
 						} else {
 							// TODO check for name conflict and rename if required
-							console.log('SAVE FILE to db',toAdd);
+							//console.log('SAVE FILE to db',toAdd);
 							db.post(toAdd,function(err,postResponse) {
 								if (err) {
 									console.log("ERROR",err);
@@ -249,13 +249,13 @@ pouchTransport.upload = function(a,fm) {
 									toAdd._id=postResponse.id;
 									toAdd._rev=postResponse.rev;
 									toAdd.hash=pouchTransport.utils.volumeFromHash(toAdd.phash)+'_'+postResponse.id;
-									console.log('update with id',toAdd,postResponse);
+									//console.log('update with id',toAdd,postResponse);
 									db.put(toAdd,postResponse.revision,function(err,putResponse) {
-										console.log('SAVED FILE responses',postResponse,putResponse,arguments);
+										//console.log('SAVED FILE responses',postResponse,putResponse,arguments);
 										if (err) {
 											console.log('ERROR',err);
 										} else {
-											console.log(reader.result)
+											//console.log(reader.result)
 											db.putAttachment(toAdd._id,'fileContent',putResponse.rev,new Blob([reader.result]),toAdd.mime,function(err,attResponse) {
 												if (err) { 
 													console.log('ERROR',err);
@@ -263,11 +263,11 @@ pouchTransport.upload = function(a,fm) {
 													var cwd={hash:fm.cwd().hash};
 													//if (options.data.cmd=='mkfile') cwd={hash:toAdd.phash};
 													var ret={cwd:cwd,added:[toAdd]};
-													console.log('f',ret,reader.result,attResponse);
+													//console.log('f',ret,reader.result,attResponse);
 													dfr.resolve(ret);
 												}
 											});
-											console.log('resolve subpromise file',toAdd);
+											//console.log('resolve subpromise file',toAdd);
 											dfr.resolve([toAdd]);
 										}
 									});
@@ -295,14 +295,14 @@ pouchTransport.upload = function(a,fm) {
 	var entries;
 	// DND   yay dataTransfer
 	if (e.dataTransfer && e.dataTransfer.items) {
-		console.log('start DND',e.dataTransfer)
+		//console.log('start DND',e.dataTransfer)
 		entries = e.dataTransfer.items;
 		for (var i = 0, f; f = entries[i]; i++) {
 			promises.push(traverseFileTree(entries[i].webkitGetAsEntry()));
 		}
 		// wait for uploads per item (recursively(
 		$.when.apply($,promises).then(function(res) {
-			console.log('resolve.master args',arguments);
+			//console.log('resolve.master args',arguments);
 			var final=[];
 			$.each(Array.prototype.slice.call(arguments, 0),function(k,arg) {
 				final.push(arg);

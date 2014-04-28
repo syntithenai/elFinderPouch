@@ -20,6 +20,8 @@ pouchTransport.utils = {
 					match=pouchTransport.dbs[pouchTransport.utils.volumeFromHash(target)];
 				} else {
 					match=new PouchDB(v.connectionString);
+					match.name=v.name;
+					match.connectionString=v.connectionString;
 					pouchTransport.dbs[pouchTransport.utils.volumeFromHash(target)]=match;
 				}
 			}
@@ -36,9 +38,9 @@ pouchTransport.utils = {
 			//console.log('get',key);
 			var db=pouchTransport.utils.getDatabase(target);
 			db.getAttachment(key,'fileContent',function(err,attResponse) {
-				console.log('GET',err,attResponse);
+				//console.log('GET',err,attResponse);
 				if (err) {
-					console.log('ERROR',err);
+					//console.log('ERROR',err);
 					d.resolve(new Blob(['']));
 				} else {
 					d.resolve(attResponse);
@@ -72,6 +74,8 @@ pouchTransport.utils = {
 		$.each(pouchTransport.options.dbs,function(k,database) {
 			if ($.trim(volume)==$.trim(database.name)) {
 				ret= database;
+				ret.name=volume;
+				ret.connectionString=database.connectionString;
 			}
 		});
 		return ret;
@@ -116,11 +120,11 @@ pouchTransport.utils = {
 			onadd(file);
 			if (file && file.name) {
 				getContent(file).then(function(content) {
-					console.log('got content',content);
+					//console.log('got content',content);
 					var path='';
 					if (file.path) path=file.path;
 					zipWriter.add(path+file.name, new zip.BlobReader(content), function() {
-						console.log('added to zip',addIndex);
+						//console.log('added to zip',addIndex);
 						addIndex++;
 						if (addIndex < files.length)
 							nextFile();
@@ -150,34 +154,29 @@ pouchTransport.utils = {
 		}
 	},
 	unzipFiles : function (blob, fileCallback, callback) {
-		console.log('unzip');
+		//console.log('unzip');
 		// use a zip.BlobReader object to read zipped data stored into blob variable
 		zip.createReader(new zip.BlobReader(blob), function(zipReader) {
-		console.log('created reader');
+		//console.log('created reader');
 			// get entries from the zip file
 			zipReader.getEntries(function(entries) {
-				console.log('got entrys',entries);
+				//console.log('got entrys',entries);
 				// get data from the first file
 				var promises=[];
 				$.each(entries,function(key,entry) {
 					var dfr=$.Deferred();
-					console.log('request lentry data',entry);
-					try {
-						entry.getData(new zip.BlobWriter("text/plain"), function(data) {
-								// close the reader and calls callback function with uncompressed data as parameter
-								console.log('got entry data');
-								if (typeof fileCallback=="function") fileCallback(entry,data);
-								dfr.resolve(entry);
-						});
-					} catch (e) {
-						console.log(e);
-						dfr.resolve();
-					}
+					//console.log('request lentry data',entry);
+					entry.getData(new zip.BlobWriter("text/plain"), function(data) {
+							// close the reader and calls callback function with uncompressed data as parameter
+							//console.log('got entry data');
+							if (typeof fileCallback=="function") fileCallback(entry,data);
+							dfr.resolve(entry);
+					});
 					promises.push(dfr);
 				});
-				console.log('called for data');
+				//console.log('called for data');
 				$.when.apply($,promises).then(function() {
-					console.log('got final data',arguments);
+					//console.log('got final data',arguments);
 					zipReader.close();
 					if (typeof callback=="function") callback(arguments);
 				})
@@ -185,7 +184,13 @@ pouchTransport.utils = {
 		}, onerror);
 	},
 	onerror : function(message) {
-	  console.error(message);
+		if (message) {
+			console.log('ERROR:',message);
+			return true;
+		} else {
+			return false;
+		}
+		
 	}	,
 	mkSomething : function(cmd,name,target) {
 		var d=$.Deferred();

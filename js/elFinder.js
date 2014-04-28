@@ -6,7 +6,7 @@
  **/
 window.elFinder = function(node, opts) {
 	this.time('load');
-	console.log('load elfinder',opts);
+	//console.log('load elfinder',opts);
 	var self = this,
 		
 		/**
@@ -848,7 +848,7 @@ window.elFinder = function(node, opts) {
 	 * @return $.Deferred
 	 */
 	this.request = function(options) { 
-	console.log('request',options);
+	//console.log('request',options);
 		var self     = this,
 			o        = this.options,
 			dfrd     = $.Deferred(),
@@ -893,6 +893,7 @@ window.elFinder = function(node, opts) {
 				cmd == 'open' && open($.extend(true, {}, data));
 
 				// fire some event to update cache/ui
+				console.log('DONE',data);
 				data.removed && data.removed.length && self.remove(data);
 				data.added   && data.added.length   && self.add(data);
 				data.changed && data.changed.length && self.change(data);
@@ -943,10 +944,12 @@ window.elFinder = function(node, opts) {
 			 * @return void
 			 **/
 			success = function(response) {
-				if (raw) {
+				console.log('TRANSPORT success',response);
+				if (raw || !!response.raw) {
+					console.log('return raw');
 					return dfrd.resolve(response);
 				}
-				
+				console.log('NOT HERE');
 				if (!response) {
 					return dfrd.reject(['errResponse', 'errDataEmpty'], xhr);
 				} else if (!$.isPlainObject(response)) {
@@ -956,7 +959,7 @@ window.elFinder = function(node, opts) {
 				} else if (!self.validResponse(cmd, response)) {
 					return dfrd.reject('errResponse', xhr);
 				}
-				console.log('resopnse',response);
+				//console.log('resopnse',response);
 				//response = self.normalize(response);
 
 				if (!self.api) {
@@ -2241,7 +2244,7 @@ elFinder.prototype = {
 		key = 'elfinder-'+key+this.id;
 		
 		if (val === null) {
-			console.log('remove', key)
+			//console.log('remove', key)
 			return s.removeItem(key);
 		}
 		
