@@ -19,6 +19,7 @@ var coder = function(coderName) {
 		},5000);
 		return timeout;
 	}
+	
 	var JsonFormatter = {
         stringify: function (cipherParams) {
             // create json object with ciphertext
@@ -63,7 +64,7 @@ var coder = function(coderName) {
 		encode : function(text) {
 			if (!password || password.length==0)  askKey();
 			else updateTimeout();
-			return CryptoJS.AES.encrypt(text, password, { format: JsonFormatter });
+			return CryptoJS.AES.encrypt(text, password, { format: JsonFormatter })+'';
 		},
 		decode : function(encrypted) {
 			if (!password || password.length==0)  askKey(encrypted);

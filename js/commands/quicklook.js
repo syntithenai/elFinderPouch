@@ -218,17 +218,21 @@ elFinder.prototype.commands.quicklook = function() {
 				!file.read && e.stopImmediatePropagation();
 				self.window.data('hash', file.hash);
 				self.preview.unbind('changesize').trigger('change').children().remove();
-				title.html(fm.escape(file.name));
+				var size=(file.mime == 'directory' ? '' : fm.formatSize(file.size));
+				var date=fm.i18n('modify')+': '+ fm.formatDate(file);
+				title.html(fm.escape(file.name)+'      Size: '+size+' '+date);
 				
-				info.html(
-						tpl.replace(/\{value\}/, file.name)
-						+ tpl.replace(/\{value\}/, fm.mime2kind(file))
-						+ (file.mime == 'directory' ? '' : tpl.replace(/\{value\}/, fm.formatSize(file.size)))
-						+ tpl.replace(/\{value\}/, fm.i18n('modify')+': '+ fm.formatDate(file))
-					)
-				icon.addClass('elfinder-cwd-icon ui-corner-all '+fm.mime2class(file.mime));
-
-				if (file.tmb) {
+				info.html('');
+				var mimeParts=file.mime.split("/");
+				// TODO video/audio
+				if (mimeParts[0]=='image' && (pouchTransport.utils.isLocalPouch(file.hash) || pouchTransport.utils.isCouch(file.hash))) {
+					console.log('couch/pouch');
+					pouchTransport.utils.fileAsURL(file).then(function(url) {
+					console.log('couch/pouch url ',url,height);
+						self.preview.html($(tpl.replace(/\{value\}/, '<img src="'+url+'" style="max-height:'+(height-20)+'px; padding-top: 5px;" />')));
+						self.info.delay(100).fadeIn(10);
+					})
+				} else if (file.tmb) {
 					$('<img/>')
 						.hide()
 						.appendTo(self.preview)
@@ -237,8 +241,8 @@ elFinder.prototype.commands.quicklook = function() {
 							$(this).remove();
 						})
 						.attr('src', (tmb = fm.tmb(file.hash)));
+						self.info.delay(100).fadeIn(10);
 				}
-				self.info.delay(100).fadeIn(10);
 			} else { 
 				e.stopImmediatePropagation();
 			}
@@ -369,8 +373,9 @@ elFinder.prototype.commands.quicklook = function() {
 			preview = this.preview,
 			i, p;
 		
-		width  = o.width  > 0 ? parseInt(o.width)  : 450;	
-		height = o.height > 0 ? parseInt(o.height) : 300;
+		
+		width  = o.width  > 0 ? parseInt(o.width)  : 800;	
+		height = o.height > 0 ? parseInt(o.height) : 400;
 
 		fm.one('load', function() {
 			parent = fm.getUI();
@@ -420,6 +425,19 @@ elFinder.prototype.commands.quicklook = function() {
 	}
 	
 	this.exec = function() {
+		// IN THE ABSENSE OF A SELECTED 
+		// TODO GETSTATE
+		// select first of cwd
+		if (this.fm.selected().length == 0) {
+
+		// select first of selected
+		} else if (this.fm.selected().length >1) {
+			//this.fm.selec
+		// one selected, use it
+		} else {
+		
+		}
+		//console.log('QUICKLOOK EXEC',fm.files(),fm.cwd(),fm);
 		this.enabled() && this.window.trigger(this.opened() ? 'close' : 'open');
 	}
 

@@ -9,8 +9,10 @@ function test() {
 var pouchTransport={
 	options: {
 		dbs:[
-			{name : 'pouchlocalfilesystem', description: 'local pouch',connectionString : 'filesystem',syncWith:{}},
-			{name : 'pouchdblocalhostfilesystem', description: 'localhost pouch',connectionString : 'http://localhost:5984/filesystem',syncWith:{}},
+			{name : 'pouchlocalfilesystem', description: 'local pouch',connectionString : 'filesystem',syncWith:{},searchable:true,writable:false},
+			//{name : 'pouchlocalfilesystem', description: 'local pouch',connectionString : 'filesystem',syncWith:{}},
+			{name : 'pouchdblocalhostfilesystem', description: 'localhost pouch',connectionString : 'http://stever:wtfaid72@localhost:5984/filesystem',syncWith:{},searchable:true},
+			//{name : 'irisfilesystem', description: 'iris',connectionString : 'http://stever:wtfaid72@syntithenai.iriscouch.com/filesystem',syncWith:{},searchable:false},
 			//{name : 'pdouchdblocalhostfilesystem', description: 'ddlocal pouch',connectionString : 'http://localhost:5894/filesystem',syncWith:{}}
 		]
 	}
@@ -38,26 +40,26 @@ $(document).ready(function() {
 			'cut', 'paste', 'edit', 'extract', 'archive', 'search', 'info', 'view', 'help',
 			'resize', 'sort'
 		],
-		/*contextmenu : {
+		contextmenu : {
 			// navbarfolder menu
-			navbar : ['open', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'info'],
+			navbar : ['open', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|'],
 
 			// current directory menu
-			cwd    : ['reload', 'back', '|', 'upload', 'mkdir', 'mkfile', 'paste', '|', 'info'],
+			cwd    : ['reload', 'back', '|', 'upload', 'mkdir', 'mkfile', 'paste', '|'],
 
 			// current directory file menu
 			files  : [
-				'getfile', '|','open', 'quicklook', '|', 'download', '|', 'copy', 'cut', 'paste', 'duplicate', '|',
-				'rm', '|', 'edit', 'rename', 'resize', '|', 'archive', 'extract', '|', 'info'
+				'getfile','|','open', 'edit',  'resize', 'rename', '|', 'download',  'archive', 'extract','|', 'copy', 'cut', 'paste', 'duplicate', '|',
+				'rm'
 			]
 		},
 		ui :['toolbar', 'places', 'tree', 'path', 'stat'],
 		uiOptions : {
 			// toolbar configuration
 			toolbar : [
-				['back', 'forward'],
+				['home', 'up','back', 'forward'],
 				// ['reload'],
-				// ['home', 'up'],
+				// [],
 				['mkdir', 'mkfile', 'upload'],
 				['copy', 'cut', 'paste'],
 				['search'],
@@ -67,7 +69,7 @@ $(document).ready(function() {
 		},
 		commandsOptions : {
 			edit : {
-				mimes : ['text/plain', 'text/html', 'text/javascript'], //types to edit
+				mimes : [], //types to edit
 				editors : [{
 					mimes : ['text/html'],  //types to edit with tinyMCE
 					load : function(textarea) {
@@ -87,8 +89,13 @@ $(document).ready(function() {
 						tinymce.execCommand('mceRemoveEditor', false, textarea.id);
 					}
 				}]
+			},
+			quicklook : {
+				autoplay: false,
+				//width: '70%',
+			
 			}
-		}*/
+		}
 		
 		
 	});

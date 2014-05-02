@@ -93,6 +93,6 @@ MimeConverter.lookupMime = function(fileName) {
 		// treat as binary
 		ret='application/unknown';
 	}
-	//console.log('LOOKUP MIME',fileName,ret);
+	console.log('LOOKUP MIME',fileName,ret);
 	return ret;
 }

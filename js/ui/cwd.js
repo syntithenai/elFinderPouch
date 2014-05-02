@@ -118,7 +118,6 @@ $.fn.elfindercwd = function(fm, options) {
 			 * @type String
 			 */
 			query = '',
-			
 			lastSearch = [],
 
 			/**
@@ -128,7 +127,8 @@ $.fn.elfindercwd = function(fm, options) {
 			 **/
 			templates = {
 				icon : '<div id="{hash}" class="'+clFile+' {permsclass} {dirclass} ui-corner-all" title="{tooltip}"><div class="elfinder-cwd-file-wrapper ui-corner-all"><div class="elfinder-cwd-icon {mime} ui-corner-all" unselectable="on" {style}/>{marker}</div><div class="elfinder-cwd-filename" title="{name}">{name}</div></div>',
-				row  : '<tr id="{hash}" class="'+clFile+' {permsclass} {dirclass}" title="{tooltip}"><td><div class="elfinder-cwd-file-wrapper"><span class="elfinder-cwd-icon {mime}"/>{marker}<span class="elfinder-cwd-filename">{name}</span></div></td><td>{perms}</td><td>{date}</td><td>{size}</td><td>{kind}</td></tr>'
+				row  : '<tr id="{hash}" class="'+clFile+' {permsclass} {dirclass}" title="{tooltip}"><td><div class="elfinder-cwd-file-wrapper"><span class="elfinder-cwd-icon {mime}"/>{marker}<span class="elfinder-cwd-filename">{name}</span></div></td><td>{perms}</td><td>{date}</td><td>{size}</td><td>{kind}</td></tr>',
+				search  : '<tr id="{hash}" class="'+clFile+' {permsclass} {dirclass}" title="{tooltip}"><td><div class="elfinder-cwd-file-wrapper"><span class="elfinder-cwd-icon {mime}"/>{marker}<span class="elfinder-cwd-filename">{path}</span></div></td><td>{perms}</td><td>{date}</td><td>{size}</td><td>{kind}</td></tr>'
 			},
 			
 			permsTpl = fm.res('tpl', 'perms'),
@@ -141,6 +141,9 @@ $.fn.elfindercwd = function(fm, options) {
 			 * @type Object
 			 **/
 			replacement = {
+				path : function(f) {
+					return fm.path(f.hash);
+				},
 				permsclass : function(f) {
 					return fm.perms2class(f);
 				},
@@ -166,7 +169,11 @@ $.fn.elfindercwd = function(fm, options) {
 					return (f.alias || f.mime == 'symlink-broken' ? symlinkTpl : '')+(!f.read || !f.write ? permsTpl : '');
 				},
 				tooltip : function(f) {
-					var title = fm.formatDate(f) + (f.size > 0 ? ' ('+fm.formatSize(f.size)+')' : '');
+					var title = fm.path(f.hash)+"&#13;Mime: "+fm.mime2kind(f)+"&#13;Permissions: "+fm.formatPermissions(f)+"&#13;Modified: "+fm.formatDate(f)+"&#13;Size: "+fm.formatSize(f.size);
+					//if (f.path) path=f.path+"&#13;"+f.name;
+					//title="DDD"+path+title;
+					//title=path+"/n"+fm.mime2kind(f)+"\n"+f.formatPermissions(f)+"\n"+title;
+					
 					return f.tooltip? fm.escape(f.tooltip).replace(/"/g, '&quot;').replace(/\r/g, '&#13;') + '&#13;' + title : title;
 				}
 			},
@@ -179,7 +186,11 @@ $.fn.elfindercwd = function(fm, options) {
 			 **/
 			itemhtml = function(f) {
 				f.name = fm.escape(f.name);
-				return templates[list ? 'row' : 'icon']
+				//console.log('ITEMHTML',list,query);	
+				var templateToUse='icon';
+				if (query&& query.length>0) templateToUse='search';
+				else if(list) templateToUse='row';
+				return templates[templateToUse]
 						.replace(/\{([a-z]+)\}/g, function(s, e) { 
 							return replacement[e] ? replacement[e](f) : (f[e] ? f[e] : ''); 
 						});
@@ -383,7 +394,7 @@ $.fn.elfindercwd = function(fm, options) {
 					top   = !last.length,
 					place = list ? cwd.children('table').children('tbody') : cwd,
 					files;
-
+		
 				if (!buffer.length) {
 					return wrapper.unbind(scrollEvent);
 				}
@@ -646,7 +657,8 @@ $.fn.elfindercwd = function(fm, options) {
 					.addClass('elfinder-cwd-view-'+(list ? 'list' :'icons'));
 
 				wrapper[list ? 'addClass' : 'removeClass']('elfinder-cwd-wrapper-list');
-
+				var pathHeader='';
+				//if (query) pathHeader='<td></td>';
 				list && cwd.html('<table><thead><tr class="ui-state-default"><td >'+msg.name+'</td><td>'+msg.perm+'</td><td>'+msg.mod+'</td><td>'+msg.size+'</td><td>'+msg.kind+'</td></tr></thead><tbody/></table>');
 		
 				buffer = $.map(files, function(f) { return any || f.phash == phash ? f : null; });

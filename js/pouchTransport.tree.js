@@ -189,14 +189,17 @@ pouchTransport.tree = {
 		console.log('start paste',targets,src,dst);
 		var mdfr=$.Deferred();
 		if (targets && dst && src) {
+			console.log('have params');
 			// maybe two different databases/
 			var dbsource=pouchTransport.utils.getDatabase(src);
 			var dbdest=pouchTransport.utils.getDatabase(dst);
 			// start with all the target records in full
 			pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
+			console.log('got targets');
 				// rename copied records to avoid conflicts
 				pouchTransport.utils.fixNameConflicts(targetRecords,dst).then(function() {
-					// if we are just moving records we only need to update the phash of the targets
+				console.log('done name conflicts');
+					// same volume - if we are just moving records we only need to update the phash of the targets
 					if (cut==1 && pouchTransport.utils.volumeFromHash(src)==pouchTransport.utils.volumeFromHash(dst)) {
 						console.log('move');
 						// just a move, update targets to have new parents
@@ -225,6 +228,7 @@ pouchTransport.tree = {
 							});
 							mdfr.resolve({raw:1,added:newRecords,removed:targets});
 						});
+					
 					// otherwise we need to make a full copy recursively
 					} else {
 						// full copy
@@ -347,9 +351,16 @@ pouchTransport.tree = {
 									$.each(arguments,function(key,value) {
 										console.log(value)
 										final.push(value);
-									})
+									});
+									console.log();
+									if (cut==1) {
+										console.log('now remove source records',targetRecords);
+										$.each(targetRecords,function(k,record) {
+											dbsource.remove(record);
+										});
+									}
 									console.log('FINALLY',final);
-									mdfr.resolve({raw:1,added:final});
+									mdfr.resolve({raw:1,added:final,removed:targetRecords});
 								});
 								
 							});

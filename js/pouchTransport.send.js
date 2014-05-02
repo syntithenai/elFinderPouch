@@ -46,8 +46,8 @@ pouchTransport.send = function(options,fm) {
 						function() {console.log('prgress');},
 						function(final) {
 							console.log('done',final)
-							pouchTransport.utils.mkSomething('mkfile','archive.zip',options.data.dst).then(function(newFile) {
-								pouchTransport.utils.putAttachment(newFile.hash,final);
+							// TODO more interesting filename - single folder/filename -> easy otherwise <parentfoldername>-selection.zip
+							pouchTransport.utils.mkSomething('mkfile','archive.zip',options.data.dst,final).then(function(newFile) {
 								d.resolve({added:[newFile]});
 							});
 							
@@ -154,15 +154,17 @@ pouchTransport.send = function(options,fm) {
 			});;
 			break;
 		case 'rename' :
-			//console.log('rename');
+			console.log('rename');
 			if (options.data.name && options.data.target) {
 				var db=pouchTransport.utils.getDatabase(options.data.target);
 				if (db) {
 					db.get(pouchTransport.utils.keyFromHash(options.data.target)).then(function(target) {
+						// TODO - normalise to function utils.saveRecord for setting defaults in one place
 						target.name=options.data.name;
 						target.ts=Date.now();
-						target.mime=MimeConverter.lookupMime(target.name);
-						//console.log('new target ',target);
+						if (target.type=='file') target.mime=MimeConverter.lookupMime(target.name);
+						else target.mime='directory';
+						console.log('new target ',target);
 						db.post(target).then(
 							function(res) {  
 								//console.log('dne ren',res); 
@@ -220,77 +222,106 @@ pouchTransport.send = function(options,fm) {
 				);
 			}
 			break;
-		case 'disduplicate' :
-			// TODO - what about folders RECURSIVE
-			var createFiles=function() {
-				var deferreds=[];
-				$.each(options.data.targets,function(key,val) {
-					var df=new $.Deferred();
-					var db=pouchTransport.utils.getDatabase(val);
-					if (db) {
-						db.get(pouchTransport.utils.keyFromHash(val),function (err,oval) {
-							var val=JSON.parse(JSON.stringify(oval));
-							delete val._id;
-							delete val._rev;
-							delete val.hash;
-							db.post(val,function(err,resp) {
-								val.hash=pouchTransport.utils.volumeFromHash(val)+'_'+val._id;
-								var parts=$.trim(val.name).split(".");
-								if (parts.length>1) val.name=parts.slice(0,parts.length-1).join(".")+"-"+val._id+'.'+parts[parts.length-1];
-								else val.name=val.name+"-"+val._id;
-								//val._rev=resp.rev;
-								db.put(val,function(err,ffresponse) {
-									if (!pouchTransport.utils.onerror(err)) {
-										db.getAttachment(pouchTransport.utils.keyFromHash(val),'fileContent',ffresponse.rev,function(err,aresp) {
-											//db.put
-										});
-									}
-									df.resolve(val);
-								});
-							});
-						});
-					}
-					deferreds.push(df);
-				});
-				return deferreds;
-			}
-			if (options.data.targets) {
-				$.when.apply($,createFiles()).then(
-					function(res) {  
-						d.resolve({added:[res]}); 
-					}
-				);
-			} 
-			break;
 		case 'search' :
-			// TODO HMMM SEARCH WHERE ? MULTI ROOT SEARCH
-			var db=pouchTransport.utils.getDatabase(options.data.target);
-					
-			if (db && options.data.q) {
-				q=options.data.q;
-				//console.log('seasrch',q);
-						
-				db.query(
-					function(d) {
-						if (d.type=='file' || d.type=='directory') {
-							//if (d.name.indexOf(options.data.q)!==-1) {
-								emit(d.name,d);
-							//	}
-						}
-					},
-					{startkey:q ,endkey:q+"\ufff0"},
-					function(err,response) {
-						//console.log('Done',response.rows);
-						var searchResults=[];
-						$.each(response.rows,function(key,val) {
-							searchResults.push(val.value);
-						});
-						var ret={files:searchResults}; //JSON.parse(JSON.stringify(response.rows))};
-						//console.log(ret);
-						// btween prev log and resolving files array vanishes ????
-						d.resolve(ret);
+			var promises=[];
+			//console.log('SEASRCH',pouchTransport.options.dbs,options.data);
+			$.each(pouchTransport.options.dbs,function(key,dbConfig) {
+				if (dbConfig.searchable!==false) {
+					//console.log('SEARCHABLE',dbConfig);
+					var dfr=$.Deferred();
+					promises.push(dfr);
+					var db=pouchTransport.utils.getDatabase(dbConfig.name+'_anyoldid');
+					if (db && options.data.q) {
+						var qParts=options.data.q.split(' ');
+						q=qParts[0];
+						//console.log('seasrch',q);
+						db.query(
+							function(d) {
+								function grep(ary,filt) {
+									var result=[];
+									for(var i=0,len=ary.length;i++<len;) {
+										var member=ary[i]||'';
+										if(filt && (typeof filt === 'Function') ? filt(member) : member) {
+											result.push(member);
+										}
+									}
+									return result;
+								}
+								if (d.type=='file' || d.type=='directory') {
+									var punct='\\['+ '\\!'+ '\\"'+ '\\#'+ '\\$'+   // since javascript does not
+									'\\%'+ '\\&'+ '\\\''+ '\\('+ '\\)'+  // support POSIX character
+									'\\*'+ '\\+'+ '\\,'+ '\\\\'+ '\\-'+  // classes, we'll need our
+									'\\.'+ '\\/'+ '\\:'+ '\\;'+ '\\<'+   // own version of [:punct:]
+									'\\='+ '\\>'+ '\\?'+ '\\@'+ '\\['+
+									'\\]'+ '\\^'+ '\\_'+ '\\`'+ '\\{'+
+									'\\|'+ '\\}'+ '\\~'+ '\\]';
+
+									
+									var re=new RegExp(     // tokenizer
+									'\\s*'+            // discard possible leading whitespace
+									'('+               // start capture group
+									'\\.{3}'+            // ellipsis (must appear before punct)
+									'|'+               // alternator
+									//'\\w+\\-\\w+'+       // hyphenated words (must appear before punct)
+									//'|'+               // alternator
+									//'\\w+\'(?:\\w+)?'+   // compound words (must appear before punct)
+									//'|'+               // alternator
+									//'\\w+'+              // other words
+									//'|'+               // alternator
+									'['+punct+']'+        // punct
+									')'                // end capture group
+									);
+									emit(d.name,d);
+									
+									var tokens=grep( d.name.split(re) );
+									for (var i=0; i < tokens.length; i++) {
+										emit(tokens[i],d);
+									};
+									
+									
+								}
+							},
+							{startkey:q ,endkey:q+"\ufff0"},
+							function(err,response) {
+								//console.log('QP',qParts);
+								var searchResults=[];
+								if (!pouchTransport.utils.onerror(err)) {
+									//console.log('Done',response);
+									var searchResultHash={};
+									$.each(response.rows,function(key,val) {
+										searchResultHash[val.value.hash]=val.value;
+									});
+									$.each(searchResultHash,function(key,val) {
+										var OK=true;
+										// extra filter parts
+										if (qParts.length>1) {
+											for (var i=1; i<qParts.length; i++) {
+												if (val.name.indexOf(qParts[i])==-1) {
+													OK=false;
+												}
+											}
+										}
+										if (OK) searchResults.push(val);
+									});
+								}
+								dfr.resolve(searchResults);
+							}
+						);
+					}
+				}
+			});
+			$.when.apply($,promises).then(function() {
+				var final=[];
+				$.each(arguments,function(key,results) {
+					$.each(results,function(key,value) {
+						final.push(value);
 					});
-			}
+				});
+				//console.log('FINALLY',final);
+				var ret={files:final}; 
+				d.resolve(ret);
+			});
+
 			break;
 		case 'get' :
 			pouchTransport.utils.getAttachment(options.data.target).then(function(bs) {
