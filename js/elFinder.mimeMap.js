@@ -1,7 +1,6 @@
 var MimeConverter={};
 MimeConverter.extensionMapping={'epub':'application/epub+zip',
 'jar':'application/java-archive',
-'js':'application/javascript',
 'json':'application/json',
 'doc dot':'application/msword',
 'ai eps ps':'application/postscript',
@@ -52,10 +51,12 @@ MimeConverter.extensionMapping={'epub':'application/epub+zip',
 'psd':'image/vnd.adobe.photoshop',
 'ics ifb':'text/calendar',
 'css':'text/css',
+'sheet':'text/sheet',
 'csv':'text/csv',
 'html htm':'text/html',
 'txt text':'text/plain',
-'sql':'text/sql',
+'sql':'text/x-sql',
+'js':'text/javascript',
 'vcard':'text/vcard',
 'mp4 mp4v mpg4':'video/mp4',
 'mpeg mpg mpe m1v m2v':'video/mpeg',
@@ -77,22 +78,24 @@ MimeConverter.extensionMapping={'epub':'application/epub+zip',
 'pdf':'application/pdf',
 };
 MimeConverter.lookupMime = function(fileName) {
-	var lookup={};
-	$.each(MimeConverter.extensionMapping,function(fileExtensions,mimeType) {
-		var parts=fileExtensions.split(' ');
-		$.each(parts,function(k,fileExtension) {
-			lookup[fileExtension]=mimeType;
-		});
-	});
-	var fileParts=fileName.split(".");
-	var extension=fileParts[fileParts.length-1];
 	var ret='';
-	if (lookup[extension] && lookup[extension].length>0) {
-		ret=lookup[extension];
-	} else {
-		// treat as binary
-		ret='application/unknown';
+	if (fileName) {
+		var lookup={};
+		$.each(MimeConverter.extensionMapping,function(fileExtensions,mimeType) {
+			var parts=fileExtensions.split(' ');
+			$.each(parts,function(k,fileExtension) {
+				lookup[fileExtension]=mimeType;
+			});
+		});
+		var fileParts=fileName.split(".");
+		var extension=fileParts[fileParts.length-1];
+		if (lookup[extension] && lookup[extension].length>0) {
+			ret=lookup[extension];
+		} else {
+			// treat as binary
+			ret='application/unknown';
+		}
+		console.log('LOOKUP MIME',fileName,ret);
 	}
-	console.log('LOOKUP MIME',fileName,ret);
 	return ret;
 }

@@ -47,6 +47,7 @@ elFinder.prototype.commands.upload = function() {
 		}
 		
 		if (data && (data.input || data.files || data.event)) {
+			console.log('UPLOAD PASS OFF',data);
 			return fm.upload(data);
 		}
 		

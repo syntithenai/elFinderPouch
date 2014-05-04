@@ -63,7 +63,7 @@ elFinder.prototype.commands.open = function() {
 			} else {
 				w = 'width='+parseInt(9*$(window).width()/10)+',height='+parseInt(9*$(window).height()/10);
 			}
-			console.log('B64',bs.substr(0,100))
+			//console.log('B64',bs.substr(0,100))
 			var wnd = window.open(bs, 'new_window', w + ',top=50,left=50,scrollbars=yes,resizable=yes');
 			if (!wnd) {
 				return dfrd.reject('errPopup');
@@ -74,76 +74,90 @@ elFinder.prototype.commands.open = function() {
 		
 		// open files
 		cnt = files.length;
+		var editableFiles=[];
 		while (cnt--) {
 			file = files[cnt];
 			if (!file.read) {
 				return dfrd.reject(['errOpen', file.name, 'errPerm']);
 			}
-			
-			if (pouchTransport.utils.isCouch(file.hash)) {
-					console.log('HAVE COUCH');
-				var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
-				srcParts.push(file._id);
-				srcParts.push('fileContent');
-				console.log('open couch window',srcParts);
-				window.open(srcParts.join("/"));
-				//openWindow(file,srcParts.join("/"),dfrd);
-			} else if (pouchTransport.utils.isLocalPouch(file.hash))  {
-				pouchTransport.utils.getAttachment(file.hash).then(function(bs) {
-					if (bs) {
-						var mimeParts=file.mime.split("/");
-						if (mimeParts[0]!='video') {
-							bs = new Blob([bs],{type: file.mime});
-							console.log('BS',bs);
-							openWindow(file,URL.createObjectURL(bs),dfrd);
-						} else {
-							bs = new Blob([bs],{type: file.mime});
-							window.open(URL.createObjectURL(bs));
-							//openWindow(file,URL.createObjectURL(bs),dfrd);
-						}
-					}
-					console.log('loaded attachment',file.name,file.hash);
+			var mimeParts=file.mime.split("/");
+			if (mimeParts[0]=="text" || file.mime=="image/svg+xml") {
+				// redirect to edit
+				//console.log('what now, direct edit',this.fm,fm);
+				this.fm.exec('edit',[file.hash],{}).then(function(res) {
+					//console.log('get done',res,arguments);
 				});
+				/*fm.request({
+					data   : {cmd  : 'get', target :  file.hash},
+					notify : {type : 'open', cnt : 1, hideCnt : true},
+					syncOnFail : true
+				});*/
 			} else {
-				if (!(url = fm.url(/*file.thash || */file.hash))) {
-					url = fm.options.url;
-					url = url + (url.indexOf('?') === -1 ? '?' : '&')
-						+ (fm.oldAPI ? 'cmd=open&current='+file.phash : 'cmd=file')
-						+ '&target=' + file.hash;
-				}
-			
-				// set window size for image if set
-				if (file.dim) {
-					s = file.dim.split('x');
-					w = 'width='+(parseInt(s[0])+20) + ',height='+(parseInt(s[1])+20);
+				if (pouchTransport.utils.isCouch(file.hash)) {
+					//console.log('HAVE COUCH');
+					var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
+					srcParts.push(file._id);
+					srcParts.push('fileContent');
+					//console.log('open couch window',srcParts);
+					window.open(srcParts.join("/"));
+					//openWindow(file,srcParts.join("/"),dfrd);
+				} else if (pouchTransport.utils.isLocalPouch(file.hash))  {
+					pouchTransport.utils.getAttachment(file.hash).then(function(bs) {
+						if (bs) {
+							var mimeParts=file.mime.split("/");
+							if (mimeParts[0]!='video') {
+								bs = new Blob([bs],{type: file.mime});
+								//console.log('BS',bs);
+								openWindow(file,URL.createObjectURL(bs),dfrd);
+							} else {
+								bs = new Blob([bs],{type: file.mime});
+								window.open(URL.createObjectURL(bs));
+								//openWindow(file,URL.createObjectURL(bs),dfrd);
+							}
+						}
+						//console.log('loaded attachment',file.name,file.hash);
+					});
 				} else {
-					w = 'width='+parseInt(2*$(window).width()/3)+',height='+parseInt(2*$(window).height()/3);
-				}
+					if (!(url = fm.url(/*file.thash || */file.hash))) {
+						url = fm.options.url;
+						url = url + (url.indexOf('?') === -1 ? '?' : '&')
+							+ (fm.oldAPI ? 'cmd=open&current='+file.phash : 'cmd=file')
+							+ '&target=' + file.hash;
+					}
+				
+					// set window size for image if set
+					if (file.dim) {
+						s = file.dim.split('x');
+						w = 'width='+(parseInt(s[0])+20) + ',height='+(parseInt(s[1])+20);
+					} else {
+						w = 'width='+parseInt(2*$(window).width()/3)+',height='+parseInt(2*$(window).height()/3);
+					}
 
-				var wnd = window.open('', 'new_window', w + ',top=50,left=50,scrollbars=yes,resizable=yes');
-				if (!wnd) {
-					return dfrd.reject('errPopup');
+					var wnd = window.open('', 'new_window', w + ',top=50,left=50,scrollbars=yes,resizable=yes');
+					if (!wnd) {
+						return dfrd.reject('errPopup');
+					}
+					
+					var form = document.createElement("form");
+					form.action = fm.options.url;
+					form.method = 'POST';
+					form.target = 'new_window';
+					form.style.display = 'none';
+					var params = $.extend({}, fm.options.customData, {
+						cmd: 'file',
+						target: file.hash
+					});
+					$.each(params, function(key, val)
+					{
+						var input = document.createElement("input");
+						input.name = key;
+						input.value = val;
+						form.appendChild(input);
+					});
+					
+					document.body.appendChild(form);
+					form.submit();
 				}
-				
-				var form = document.createElement("form");
-				form.action = fm.options.url;
-				form.method = 'POST';
-				form.target = 'new_window';
-				form.style.display = 'none';
-				var params = $.extend({}, fm.options.customData, {
-					cmd: 'file',
-					target: file.hash
-				});
-				$.each(params, function(key, val)
-				{
-					var input = document.createElement("input");
-					input.name = key;
-					input.value = val;
-					form.appendChild(input);
-				});
-				
-				document.body.appendChild(form);
-				form.submit();
 			}
 		}
 		return dfrd.resolve(hashes);

@@ -22,7 +22,8 @@ $.fn.elfinderdialog = function(opts) {
 	}
 	
 	opts = $.extend({}, $.fn.elfinderdialog.defaults, opts);
-
+	//console.log('DIALOG',opts);
+			
 	this.filter(':not(.ui-dialog-content)').each(function() {
 		var self       = $(this).addClass('ui-dialog-content ui-widget-content'),
 			parent     = self.parent(),
@@ -34,17 +35,18 @@ $.fn.elfinderdialog = function(opts) {
 			overlay    = parent.children('.elfinder-overlay'),
 			buttonset  = $('<div class="ui-dialog-buttonset"/>'),
 			buttonpane = $('<div class=" ui-helper-clearfix ui-dialog-buttonpane ui-widget-content"/>')
-				.append(buttonset),
+				.append(buttonset);
+			//opts.width=
 			
-			dialog = $('<div class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-draggable std42-dialog  '+cldialog+' '+opts.cssClass+'"/>')
+			var dialog = $('<div class="ui-dialog ui-widget ui-widget-content ui-corner-all ui-draggable std42-dialog  '+cldialog+' '+opts.cssClass+'"/>')
 				.hide()
 				.append(self)
 				.appendTo(parent)
 				.draggable({ handle : '.ui-dialog-titlebar',
 					     containment : 'document' })
 				.css({
-					width  : opts.width,
-					height : opts.height
+					width  : $(this).parents('.elfinder').css('width'), //opts.width,
+					height : $(this).parents('.elfinder').css('height')
 				})
 				.mousedown(function(e) {
 					e.stopPropagation();
@@ -180,7 +182,7 @@ $.fn.elfinderdialog = function(opts) {
 			buttonset.append(button);
 		})
 		// TODO if options.buttonPosition=header header.append(buttonpane)
-		buttonset.children().length && dialog.append(buttonpane);
+		buttonset.children().length && $('.ui-dialog-titlebar',dialog).prepend(buttonpane);
 		if (opts.resizable && $.fn.resizable) {
 			dialog.resizable({
 					minWidth   : opts.minWidth,

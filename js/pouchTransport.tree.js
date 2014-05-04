@@ -186,7 +186,7 @@ pouchTransport.tree = {
 		return dfr;
 	},
 	paste : function (targets,src,dst,cut) {
-		console.log('start paste',targets,src,dst);
+		//console.log('start paste',targets,src,dst);
 		var mdfr=$.Deferred();
 		if (targets && dst && src) {
 			console.log('have params');
@@ -195,33 +195,27 @@ pouchTransport.tree = {
 			var dbdest=pouchTransport.utils.getDatabase(dst);
 			// start with all the target records in full
 			pouchTransport.tree.getTargets(targets).then(function(targetRecords) {
-			console.log('got targets');
+			//console.log('got targets');
 				// rename copied records to avoid conflicts
 				pouchTransport.utils.fixNameConflicts(targetRecords,dst).then(function() {
-				console.log('done name conflicts');
+				//console.log('done name conflicts');
 					// same volume - if we are just moving records we only need to update the phash of the targets
 					if (cut==1 && pouchTransport.utils.volumeFromHash(src)==pouchTransport.utils.volumeFromHash(dst)) {
-						console.log('move');
+						//console.log('move');
 						// just a move, update targets to have new parents
 						var promises=[];
 						$.each(targetRecords,function(k,record) {
-							console.log('moverec',record);
+							//console.log('moverec',record);
 							var dfr=$.Deferred();
 							promises.push(dfr);
 							var newRecord=JSON.parse(JSON.stringify(record));
 							newRecord.phash=dst;
-							newRecord.ts=Date.now();
-							dbsource.put(newRecord,function(err,response) {
-								if (!pouchTransport.utils.onerror(err)) {
-									console.log('put rec',newRecord);
-									dfr.resolve(newRecord);
-								} else {
-									dfr.reject();
-								}
+							pouchTransport.utils.save(newRecord).then(function(savedRecord) {
+								dfr.resolve(newRecord);
 							});
 						});
 						$.when.apply($,promises).then(function() {
-							console.log('put all records',arguments);
+							//console.log('put all records',arguments);
 							var newRecords=[];
 							$.each(arguments,function(k,arg) {
 								if (arg) newRecords.push(arg);
@@ -232,78 +226,60 @@ pouchTransport.tree = {
 					// otherwise we need to make a full copy recursively
 					} else {
 						// full copy
-						console.log('full copy',targets);
+						//console.log('full copy',targets);
 						// recursively fetch folders and return in traversal order parents first
 						pouchTransport.tree.getAllFilesAndDirectoriesInside(targets).then(function(records) {
-							console.log('all children',records);
+							//console.log('all children',records);
 							// save them all with old 
 							var promises=[];
-							var directoryLookups={};
 							// save each of these records to obtain an id
 							// as we save, store the ids in directoryLookups[oldHash]=newHash
 							// the root level targets can have their phash and hash and attachment updated immediately
 							// updating phash on the children needs to wait until there is a full list of directory Lookups
+							//var directoryLookups={};
 							$.each(records,function(k,fileOrDirectory) {
 								var dfr=$.Deferred();
 								promises.push(dfr);
-								console.log('paste record',fileOrDirectory);
+								//console.log('paste record',fileOrDirectory);
 								if (fileOrDirectory) {
 									// OR targets.indexOf(fileOrDirectory.phash)!=-1
 									if (fileOrDirectory.phash==src) {
 										// root target, POST, PUT, ATTACH
-										console.log('root update',fileOrDirectory.hash,' phash to dst',fileOrDirectory.phash);
+										//console.log('root update',fileOrDirectory.hash,' phash to dst',fileOrDirectory.phash);
 										var origHash=fileOrDirectory.hash;
 										fileOrDirectory.phash=dst;
 										delete fileOrDirectory._id;
 										delete fileOrDirectory._rev;
-										dbdest.post(fileOrDirectory,function(err,response) {
-											if (!pouchTransport.utils.onerror(err)) {
-												console.log('saved root',response,fileOrDirectory);
-												fileOrDirectory._id=response.id;
-												fileOrDirectory.ts=Date.now();
-												fileOrDirectory.hash=dbdest.name+'_'+response.id;												
-												fileOrDirectory._rev=response.rev;
-												if (fileOrDirectory.type=='directory') directoryLookups[origHash]=dbdest.name+"_"+response.id;
-												dbdest.put(fileOrDirectory,function(err,res) {
-													if (!pouchTransport.utils.onerror(err)) {
-														console.log('updated root',res);
-														if (fileOrDirectory.type=='file') {
-															pouchTransport.utils.getAttachment(origHash).then(function(blob) {
-																pouchTransport.utils.putAttachment(fileOrDirectory.hash,blob).then(function() {
-																	console.log('save attach',arguments);
-																	dfr.resolve(fileOrDirectory);
-																});
-															});
-														} else {
-															dfr.resolve(fileOrDirectory);
-														}
-													} else {
-														dfr.resolve();
-													}
+										
+										if (fileOrDirectory.type=='file') {
+											pouchTransport.utils.getAttachment(origHash).then(function(blob) {
+												pouchTransport.utils.save(fileOrDirectory,blob).then(function(savedRecord) {
+													dfr.resolve(savedRecord);
 												});
-											} else {
-												dfr.resolve();
-											}
-										});
+											});
+										} else if (fileOrDirectory.type=='directory') {
+											pouchTransport.utils.save(fileOrDirectory,'').then(function(savedRecord) {
+												savedRecord.origHash=origHash;
+												console.log('saved dir lookup',origHash,savedRecord)
+												dfr.resolve(savedRecord);
+											});
+										} else {
+											dfr.reject();
+										}
 									} else {
 										// CHILD TARGET - need to lookup parent later
-										console.log('update phash to lookup',fileOrDirectory.phash,'to',directoryLookups[fileOrDirectory.phash]);
-										var origHash=fileOrDirectory.hash;
-										delete fileOrDirectory._id;
+										fileOrDirectory._id='';
 										delete fileOrDirectory.hash;
-										delete fileOrDirectory;
-										dbdest.post(fileOrDirectory,function(err,response) {
-											console.log('saved child',response,fileOrDirectory);
-											if (!pouchTransport.utils.onerror(err)) {
-												// flag for update
-												fileOrDirectory.updatePHash=true;
-												fileOrDirectory._id=response.id;
-												fileOrDirectory.ts=Date.now();
-												fileOrDirectory.hash=dbdest.name+'_'+response.id;
-												fileOrDirectory._rev=response.rev;
-												if (fileOrDirectory.type=='directory') directoryLookups[origHash]=dbdest.name+"_"+response.id;
-												dfr.resolve(fileOrDirectory);
-											}
+										delete fileOrDirectory._rev;
+										// we need to set phash so save can determine which database
+										fileOrDirectory.origPHash=fileOrDirectory.phash;
+										fileOrDirectory.phash=dbdest.name+'_temp'; // just so save can work out which database to save to
+										// for directory lookups
+										if (fileOrDirectory.type=='directory') fileOrDirectory.origHash=fileOrDirectory.hash;
+										console.log('mark for update update phash to lookup',fileOrDirectory); //[fileOrDirectory.phash]);
+										pouchTransport.utils.save(fileOrDirectory).then(function(savedRecord) {
+											console.log('saved',savedRecord);
+											dfr.resolve(savedRecord);
 										});
 									}
 								}
@@ -314,35 +290,27 @@ pouchTransport.tree = {
 								var newRecords=[];
 								var ipromises=[];
 								// all children 
+								var directoryLookups=[];
+								// cache directory lookups
 								$.each(arguments,function(k,arg) {
+									if (arg.origHash) directoryLookups[arg.origHash]=dbdest.name+"_"+arg._id;
+								});
+								// update phashes and save again
+								$.each(arguments,function(k,arg) {
+									if (arg.origHash) directoryLookups[arg.origHash]=dbdest.name+"_"+arg._id;
 									var dfr=$.Deferred();
 									ipromises.push(dfr);
 									if (arg) {
-										if (arg.updatePHash) {
-											var origHash=arg.hash;
-											arg.phash=directoryLookups[arg.phash];
-											dbdest.put(arg,function(err,res) {
-												if (!pouchTransport.utils.onerror(err)) {
-													console.log('updated child',res,arg);
-													if (arg.type=='file') {
-														pouchTransport.utils.getAttachment(origHash).then(function(blob) {
-															pouchTransport.utils.putAttachment(arg.hash,blob).then(function() {
-																console.log('save attach',arguments);
-																dfr.resolve(arg);
-															});
-														});
-													} else {
-														dfr.resolve(arg);
-													}
-												} else {
-													dfr.resolve();
-												}
+										arg.phash=directoryLookups[arg.origPHash];
+										pouchTransport.utils.getAttachment(arg.origHash).then(function(blob) {
+											delete arg.origHash;
+											delete arg.origPHash;
+											pouchTransport.save(arg,blob).then(function(savedRecord) {
+												dfr.resolve(savedRecord);
 											});
-										} else {
-											dfr.resolve(arg);
-										}
+										});
 									} else {
-										dfr.resolve();
+										dfr.reject();
 									}
 								});
 								// FINALLY
@@ -354,12 +322,12 @@ pouchTransport.tree = {
 									});
 									console.log();
 									if (cut==1) {
-										console.log('now remove source records',targetRecords);
+										//console.log('now remove source records',targetRecords);
 										$.each(targetRecords,function(k,record) {
 											dbsource.remove(record);
 										});
 									}
-									console.log('FINALLY',final);
+									console.log('PASTE FINALLY',final);
 									mdfr.resolve({raw:1,added:final,removed:targetRecords});
 								});
 								
@@ -381,11 +349,11 @@ pouchTransport.tree = {
 			var folderTargets=[];
 			var targetLookups={};
 			$.each(targetRecords,function(k,target) {
-				 console.log('load lookups target',target.hash,target);
+				// console.log('load lookups target',target.hash,target);
 				targetLookups[target.hash]=target;
 			});
 			$.each(targets,function(k,target) {
-				 console.log('load target',target.hash,target);
+				 //console.log('load target',target.hash,target);
 				if (target.type=='directory') fileTargets.push(target);
 				else folderTargets.push(target);
 			});
@@ -399,7 +367,7 @@ pouchTransport.tree = {
 							final.push(v);
 						});
 					});
-					console.log('CH',subChildren,arguments,final);
+				//console.log('CH',subChildren,arguments,final);
 					dfr.resolve(final);
 					
 				});
@@ -412,7 +380,7 @@ pouchTransport.tree = {
 						if (v.type=='file' || v.type=='directory') final.push(v);
 					});
 				});
-				console.log('final children',targetLookups);
+				//console.log('final children',targetLookups);
 				$.each(fileTargets,function(k,v) {
 					if (targetLookups[v]) final.unshift(targetLookups[v]);
 				});
@@ -420,7 +388,7 @@ pouchTransport.tree = {
 					if (targetLookups[v]) final.unshift(targetLookups[v]);
 				});
 				//`fileTargets.concat(final);
-				console.log('loaded targets resolve with ',final);
+				//console.log('loaded targets resolve with ',final);
 				mdfr.resolve(final);
 			});
 		});
@@ -483,10 +451,12 @@ pouchTransport.tree = {
 						//console.log('response',response);
 						var promises=[];
 						var all=[];
-						$.each(response.rows,function(k,row) {
-							promises.push(getAllChildrenRecursive(row.value.hash));
-							all.push(row.value);
-						});
+						if (response && response.rows) {
+							$.each(response.rows,function(k,row) {
+								promises.push(getAllChildrenRecursive(row.value.hash));
+								all.push(row.value);
+							});
+						}
 						$.when.apply($,promises).then(function() {
 							//console.log('args',arguments);
 							$.each(arguments,function(argument,items) {

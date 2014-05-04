@@ -18,7 +18,8 @@ elFinder.prototype.commands.edit = function() {
 		 **/
 		filter = function(files) {
 			return $.map(files, function(file) {
-				return (file.mime.indexOf('text/') === 0 || $.inArray(file.mime, mimes) !== -1) 
+				//return file;
+				return (file.mime.indexOf('text/') === 0 || file.mime.indexOf('image/svg+xml') === 0 || $.inArray(file.mime, mimes) !== -1) 
 					&& file.mime.indexOf('text/rtf')
 					&& (!self.onlyMimes.length || $.inArray(file.mime, self.onlyMimes) !== -1)
 					&& file.read && file.write ? file : null;
@@ -66,7 +67,7 @@ elFinder.prototype.commands.edit = function() {
 				ta.getContent = function() {
 					return ta.val()
 				}
-				console.log('check config for editors',self.options.editors);
+				console.log('check config for editors',self.options.editors,file.mime);
 					
 				$.each(self.options.editors || [], function(i, editor) {
 					if ($.inArray(file.mime, editor.mimes || []) !== -1 
@@ -205,6 +206,7 @@ elFinder.prototype.commands.edit = function() {
 	}
 	
 	this.exec = function(hashes) {
+		//console.log('EDIT',hashes,this.files(hashes));
 		var files = filter(this.files(hashes)),
 			list  = [],
 			file;
@@ -212,7 +214,7 @@ elFinder.prototype.commands.edit = function() {
 		if (this.disabled()) {
 			return $.Deferred().reject();
 		}
-
+		//console.log('EDIT files',files);
 		while ((file = files.shift())) {
 			list.push(edit(file));
 		}

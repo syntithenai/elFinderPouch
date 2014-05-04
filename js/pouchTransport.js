@@ -24,7 +24,157 @@ var pouchTransport={
 $(document).ready(function() {
 //test();
 	//return;
-	tinyMCE.init({ewidth:1000}); 
+	tinyMCE.init({}); 
+	var codeMirrorEditor;
+	if ($.fn.sheet) {
+			//console.log('show sheet');
+			try {
+				$.sheet.preLoad("/elFinderPouch/jquery.sheet/");
+			} catch (e) {console.log('sheet err',e);}
+	} else  {
+		if (false) console.log('sheet lib not loaded');	
+	}
+	var codeMirrorPlain={
+		mimes : ['text/plain'], 
+		load : function(textarea) {
+			console.log('LOAD CODEMIRROR',textarea.id,document.getElementById(textarea.id));
+			codeMirrorEditor = CodeMirror.fromTextArea(document.getElementById(textarea.id), {
+				indentWithTabs: true,
+				smartIndent: true,
+				lineNumbers: true,
+				matchBrackets : true,
+				autofocus: true,
+				extraKeys: {
+					"F11": function(cm) {
+					  cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+					},
+					"Esc": function(cm) {
+					  if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+					}
+				},
+				foldGutter: true,
+				gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+			  });
+			  $('#'+textarea.id).data('editor',codeMirrorEditor)
+		},
+		save : function(textarea, editor) {
+			console.log('SAVE CODEMIRROR');
+			$(textarea).data('editor').save();
+			//console.log('save',textarea,editor,arguments,$(textarea).data('editor'));
+			//editor.toTextArea();
+		},
+	}
+	var codeMirrorSQL=$.extend({},codeMirrorPlain);
+	codeMirrorSQL.mode='text/x-sql';
+	codeMirrorSQL.mimes=["text/x-sql"];
+	var codeMirrorCSS=$.extend({},codeMirrorPlain);
+	codeMirrorCSS.mode='css';
+	codeMirrorCSS.mimes=["text/css"];
+	var codeMirrorJS=$.extend({},codeMirrorPlain);
+	codeMirrorJS.mode='javascript';
+	codeMirrorJS.mimes=["text/javascript"];
+	var svgEditor={
+		mimes : ['image/svg+xml'],
+		load : function(textarea) {
+			console.log('svg load');
+			// append iframe to dom
+			var iframe=$("<iframe id='svgeditor' width='900' height='550' src='svg-edit/svg-editor.html?extensions=ext-xdomain-messaging.js' />");
+			$('#'+textarea.id).hide().after(iframe);
+			
+			var svgInit=function() {
+				console.log('editor_ready();');
+				var canvas = new EmbeddedSVGEdit(iframe[0]);	
+				iframe.parent().data('canvas',canvas)	
+				if ($.trim($('#'+textarea.id).val())!='') {
+					canvas.setSvgString($('#'+textarea.id).val());
+				} else {
+					canvas.setSvgString('<svg width="640" height="480" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"></svg>');
+				}
+			}
+			
+			$(iframe).ready(function() {
+				console.log('SVG iframe ready');
+				var ifrm = iframe[0];
+				// waiting for real load
+				(function(){
+					try {
+						ifrm.contentWindow.svgEditor.ready(function() { svgInit();});
+					}
+					catch (Ex){
+						setTimeout(svgInit, 1000);
+					}
+				})();
+			})
+			
+			
+		//	console.log('LOAD SVG',textarea.id,document.getElementById(textarea.id));
+		  //data('editor',codeMirrorEditor)
+		},
+		save : function(textarea, editor) {
+			var dfr=$.Deferred();
+			//canvas=$(textarea).data('canvas');
+			console.log('SAVE SVG',textarea);
+			//var canvas=$(textarea).next('iframe.svgeditor'.parent().data('canvas');
+			try {
+				var canvas=$('#svgeditor').parent().data('canvas');
+				console.log('try',canvas)
+				var handleData = function (data,error) {
+					console.log('handle data',data,errpr)
+					if (false) console.log('Catch SVG value',data,error)	;
+					if (error) { 
+						console.log('error ' + error);
+						dfr.reject();
+					} else { 
+						console.log('savedsvg',data); 
+						//if (callback) callback(data);  
+						dfr.resolve(data);
+					}
+				}
+				canvas.getSvgString()(handleData);	
+			} catch (e) {
+				if (false) console.log('Failed to catch SVG value',e)	;
+				dfr.reject();
+			}
+			$.when.apply($,[dfr]).then(function(data) {
+				console.log('DDD',data,arguments);
+			});
+			//console.log('save',textarea,editor,arguments,$(textarea).data('editor'));
+			//editor.toTextArea();
+		}
+	};
+	var sheetEditor={
+		mimes : ['text/sheet'], 
+		load : function(textarea) {
+			console.log('LOAD SHEET',textarea.id,document.getElementById(textarea.id));
+			var sheet=$("<div id='sheet-"+textarea.id+"' ></div>");
+			sheet.html($('#'+textarea.id).val());
+			$('#'+textarea.id).hide().after(sheet);
+			sheet.sheet({
+					menuLeft: function(jS) { return  $.sheet.menuLeft.replace(/sheetInstance/g, "$.sheet.instance[" + jS.I + "]"); },
+					menuRight: function(jS) { 
+						var menu = $.sheet.menuRight.replace(/sheetInstance/g, "$.sheet.instance[" + jS.I + "]"); menu = $(menu); menu.find('.colorPickerCell').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('background-color', $(this).val()); }); menu.find('.colorPickerFont').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('color', $(this).val());}); menu.find('.colorPickers').children().eq(1).css('background-image', "url('jquery.sheet/images/palette.png')");  menu.find('.colorPickers').children().eq(3).css('background-image', "url('jquery.sheet/images/palette_bg.png')");return menu;}
+				});
+		},
+		save : function(textarea, editor) {
+			var sheet=$("#sheet-"+textarea.id);
+			var si=sheet.data('sheetInstance'); // sheet instance
+			if (si) {
+				// save in XML with formulas
+				//console.log($.sheet.dts.fromTables.xml(si));
+				//toSave[key]=$('<div />').html($.sheet.dts.fromTables.xml(si)+' ').html();
+				// FOR NOW force to HTML with rendered values
+				var sheetClone=si.tables();
+				var toSave=$('<div />').html(sheetClone).html();
+				$('#'+textarea.id).val(toSave);
+			}
+		},
+	}
+	
+
+
+
+
+
 	
 	$('#finder').elfinder({
 		// requestType : 'post',
@@ -88,7 +238,11 @@ $(document).ready(function() {
 						textarea.value = tinyMCE.get(textarea.id).selection.getContent({format : 'html'});
 						tinymce.execCommand('mceRemoveEditor', false, textarea.id);
 					}
-				}]
+				},
+				codeMirrorPlain,codeMirrorCSS,codeMirrorSQL,codeMirrorJS,
+				svgEditor,sheetEditor
+				
+				]
 			},
 			quicklook : {
 				autoplay: false,

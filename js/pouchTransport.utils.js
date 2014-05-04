@@ -51,10 +51,96 @@ pouchTransport.utils = {
 		}
 		return d;
 	},
+	save:function(toAdd,content) {
+		//console.log('SAVE',toAdd);
+		var dfr=$.Deferred();
+		var db;
+		function innerSave(toSave,content) {
+			var idfr=$.Deferred();
+			function doSave(toSave,idfr) {
+				db.put(toSave,toSave._rev,function(err,putResponse) {
+					console.log('INNER SAVED FILE responses',putResponse);
+					if (!pouchTransport.utils.onerror(err)) {
+						toSave._rev=putResponse.rev;
+						if (content) {
+							console.log('SAVE PUT ATTACH');
+							db.putAttachment(toSave._id,'fileContent',toSave._rev,content,toSave.mime,function(err,res) {
+								idfr.resolve(toSave);
+								console.log('SAVE PUT ATTACH done');
+							});
+						} else {
+							idfr.resolve(toSave);
+						}
+					} else {
+						idfr.reject();
+					}
+				});
+			}
+			// ensure id/hash alignment and timestamp record
+			toSave.hash=db.name+'_'+toSave._id;												
+			toSave.ts=Date.now();
+			// create thumbnails as object urls stored in record for some image types
+			if (content.size>0 && (toSave.mime=="image/png" || toSave.mime=="image/jpeg" || toSave.mime=="image/gif" )) {
+				//console.log('image create thumb');
+				pouchTransport.utils.createThumbnail(toSave,window.URL.createObjectURL(content)).then(function(tmb) {
+					toSave.tmb=tmb;
+					console.log('got tmb ',tmb);
+					doSave(toSave,idfr);
+				});
+			} else if (content.length>0 && toSave.mime=="image/svg+xml") {
+				toSave.tmb=window.URL.createObjectURL(new Blob([content],{type:'image/svg+xml'}));
+				//window.open(toSave.tmb);
+				console.log('svg THUMB',toSave.tmb);
+				doSave(toSave,idfr);
+			} else {
+				console.log('no thumb ',content,toSave);
+				doSave(toSave,idfr);
+			}
+			//console.log('inner save',toSave,content);
+			return idfr;
+		}
+		//console.log('SAVE Start save',JSON.stringify(toAdd));
+		//console.log(toAdd.name)
+		if (toAdd.phash && toAdd.phash.length>0) {
+			if (toAdd._id && $.trim(toAdd._id).length>0) {
+				console.log('just save',toAdd);
+				db=pouchTransport.utils.getDatabase(toAdd.phash);
+				// straight to put
+				innerSave(toAdd,content).then(function(result) {
+					dfr.resolve(result);
+				});
+			} else {
+				// we need to post the record first
+				db=pouchTransport.utils.getDatabase(toAdd.phash);
+				var newToAdd={};
+				$.each(toAdd,function(k,v) {
+					if (k!='_id' && k!='_rev') newToAdd[k]=v;
+				});
+				console.log('initial save',newToAdd);
+				
+				db.post(newToAdd,function(err,postResponse) {
+					if (!pouchTransport.utils.onerror(err)) {
+						console.log('donoe',postResponse);
+						newToAdd._id=postResponse.id;
+						newToAdd._rev=postResponse.rev;
+						newToAdd.hash=pouchTransport.utils.volumeFromHash(toAdd.phash)+'_'+postResponse.id;
+						console.log('update with id',newToAdd,postResponse);
+						innerSave(newToAdd,content).then(function(result) {
+							dfr.resolve(result);
+						});
+					}
+				});
+			}
+		} else {
+			dfr.reject('No parent set when saving');
+			console.log('No parent set when saving');
+		}
+		return dfr;
+	},
 	putAttachment : function(target,content,extraProperties) {
 		var d=$.Deferred();
-		console.log('put attachment',target,content)
-			
+		console.log('DEPREC TODO FIX THISput attachment',target,content)
+		return;	
 		var db=pouchTransport.utils.getDatabase(target);
 		if (db && target) {
 			console.log('really put attachment',target,content)
@@ -94,29 +180,49 @@ pouchTransport.utils = {
 		return d;
 	},
 	createThumbnail : function(target,base64Image) {
-		console.log('CT',target,base64Image) ;
+		//console.log('CT',target,base64Image) ;
 		var dfr=$.Deferred();
-		//var fr=new FileReader();
-		//fr.onload=function(e){
-			var img=new Image();
-			img.onload=function(){
-			console.log('CT image loaded');
-				var MAXWidthHeight=64;
-				var r=MAXWidthHeight/Math.max(this.width,this.height),
-				w=Math.round(this.width*r),
-				h=Math.round(this.height*r),
-				c=document.createElement("canvas");
-				c.width=w;c.height=h;
-				c.getContext("2d").drawImage(this,0,0,w,h);
-				dfr.resolve(c.toDataURL());
-				//window.open(this);
-				//window.open(c.toDataURL());
-				console.log('CTdone',c.toDataURL());
-				//this.src=c.toDataURL();
-				//document.body.appendChild(this);
+			//fr.onload=function(e){
+		var canvas = document.createElement("canvas");
+		var img=new Image();
+		var ctx = canvas.getContext("2d");
+		var canvasCopy = document.createElement("canvas");
+		var copyContext = canvasCopy.getContext("2d");
+		img.onload = function() {
+			//console.log('loaded',this)
+			var maxWidth=60;
+			var maxHeight=60;
+			// Max size for thumbnail
+			if(typeof(maxWidth) === 'undefined') var maxWidth = 500;
+			if(typeof(maxHeight) === 'undefined') var maxHeight = 500;
+
+			// Create and initialize two canvas
+			var canvas = document.createElement("canvas");
+			var ctx = canvas.getContext("2d");
+			var canvasCopy = document.createElement("canvas");
+			var copyContext = canvasCopy.getContext("2d");
+
+			var ratio = 1;
+			if(img.width > maxWidth) {
+				ratio = maxWidth / img.width;
+			} else if(img.height > maxHeight) {
+				ratio = maxHeight / img.height;
 			}
+
+			//canvasCopy.width = img.width;
+			//canvasCopy.height = img.height;
+			//copyContext.drawImage(img, 0, 0,canvasCopy.width,canvasCopy.height);
+
+			canvas.width = img.width * ratio;
+			canvas.height = img.height * ratio;
+			//console.log('TMB',ratio,img.height,img.width,canvas.height,canvas.width)
+			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+			dfr.resolve(canvas.toDataURL());
+		};
+
+		
 			//img.src=e.target.result;
-			img.src=base64Image;
+		img.src=base64Image;
 		//}
 		//fr.readAsDataURL(contentBlob);
 		return dfr;
@@ -266,36 +372,9 @@ pouchTransport.utils = {
 				toAdd.mime=MimeConverter.lookupMime(toAdd.name);
 				toAdd.type='file';
 			} 
-			var db=pouchTransport.utils.getDatabase(toAdd.phash);
-		//	console.log('MK ',toAdd,db)
-			if (db) {
-				db.post(toAdd,function(err,postResponse) {
-					if (err) {
-						console.log('ERROR',err);
-					} else {
-						toAdd._id=postResponse.id;
-						toAdd._rev=postResponse.rev;
-						toAdd.hash=pouchTransport.utils.volumeFromHash(target)+'_'+toAdd._id;
-						db.put(toAdd,function(err,putResponse) {
-							if (err) {
-								console.log('ERROR',err);
-								d.reject();
-							} else {
-								if (cmd=='mkfile') {
-									console.log('put empty attach for file');
-									if (!fileContent) fileContent='';
-									pouchTransport.utils.putAttachment(toAdd.hash,fileContent).then(function() {
-										d.resolve(toAdd);
-									});
-									
-								} else {
-									d.resolve(toAdd);
-								}
-							}
-						});
-					}
-				});
-			}
+			pouchTransport.utils.save(toAdd,'').then(function(savedRecord) {
+				d.resolve(savedRecord);
+			});
 		}
 		return d;
 	},
@@ -410,70 +489,5 @@ pouchTransport.utils = {
 			decode : decode
 		};
 		
-	} ,
-	save:function(toAdd,content) {
-		console.log('SAVE',toAdd,content)
-		var dfr=$.Deferred();
-		var db;
-		function innerSave(toSave,content) {
-			var idfr=$.Deferred();
-			function doSave(toSave,idfr) {
-				db.put(toSave,toSave._rev,function(err,putResponse) {
-					console.log('INNER SAVED FILE responses',putResponse);
-					if (!pouchTransport.utils.onerror(err)) {
-						toSave._rev=putResponse.rev;
-						if (content) {
-							db.putAttachment(toSave._id,'fileContent',toSave._rev,toSave.mime,function(err,res) {
-								idfr.resolve(toSave);
-							});
-						} else {
-							idfr.resolve(toSave);
-						}
-					}
-				});
-			}
-			if (content && (toSave.mime=="image/png" || toSave.mime=="image/jpeg" || toSave.mime=="image/gif" )) {
-				console.log('image create thumb');
-				pouchTransport.utils.createThumbnail(toSave,'data:'+toSave.mime+';base64'+toSave._attachments.fileContent.data).then(function(tmb) {
-					toSave.tmb=tmb;
-					console.log('got tmb ',tmb);
-					doSave(toSave,idfr);
-				});
-			} else {
-				doSave(toSave,idfr);
-			}
-			
-			return idfr;
-		}
-		
-		if (!toAdd.phash) {
-			dfr.reject('No parent set when saving');
-			console.log('No parent set when saving');
-		} else if (toAdd._id) {
-			console.log('just save');
-			db=pouchTransport.utils.getDatabase(toAdd.phash);
-			// straight to put
-			innerSave(toSave,content).then(function(result) {
-				dfr.resolve(result);
-			});
-		} else {
-			console.log('initial save');
-			// we need to post the record first
-			db=pouchTransport.utils.getDatabase(toAdd.phash);
-			db.post(toAdd,function(err,postResponse) {
-				if (!pouchTransport.utils.onerror(err)) {
-					console.log('donoe',postResponse);
-					toAdd._id=postResponse.id;
-					toAdd._rev=postResponse.rev;
-					toAdd.hash=pouchTransport.utils.volumeFromHash(toAdd.phash)+'_'+postResponse.id;
-					console.log('update with id',toAdd,postResponse);
-					innerSave(toAdd,content).then(function(result) {
-						dfr.resolve(result);
-					});
-				}
-			});
-		}
-		
-		return dfr;
-	}
+	} 
 }

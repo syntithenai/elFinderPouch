@@ -338,9 +338,11 @@ pouchTransport.send = function(options,fm) {
 			
 			break;
 		case 'put' :
-			pouchTransport.utils.putAttachment(options.data.target,options.data.content).then(function(response) {
-				ret={changed:[response]};
-				d.resolve(ret);
+			pouchTransport.tree.getTarget(options.data.target).then(function(target) {
+				pouchTransport.utils.save(target[0],options.data.content).then(function(savedRecord) {
+					ret={changed:[savedRecord]};
+					d.resolve(ret);
+				});
 			});
 			break;
 	
