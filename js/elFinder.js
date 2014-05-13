@@ -752,12 +752,21 @@ window.elFinder = function(node, opts) {
 	 * @return String
 	 */
 	this.url = function(hash) {
+		console.log('FMURL',hash);
 		var file = files[hash];
 		
 		if (!file || !file.read) {
 			return '';
 		}
-		
+		if (pouchTransport.utils.isLocalPouch(hash) || pouchTransport.utils.isCouch(hash)) { //
+			console.log('pouch');
+			var dfr=$.Deferred()l
+			$.when(pouchTransport.utils.fileAsURL(hash)).then(function(url) {
+				console.log(url);
+				return url;
+			}
+		}
+		console.log('not pouch');
 		if (file.url) {
 			return file.url;
 		}

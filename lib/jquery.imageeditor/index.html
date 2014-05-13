@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!-- saved from url=(0036)http://evanw.github.io/glfx.js/demo/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>glfx.js</title>
+    <script type="text/javascript" src="lib/jquery-ui/js/jquery.js"></script>
+    <script type="text/javascript" src="lib/glfx.js"></script>
+    <script type="text/javascript" src="lib/jquery-ui/js/jquery-ui.js"></script>
+	<script type="text/javascript" src="lib/jquery.imageeditor.js"></script>
+	<script type="text/javascript" src="lib/jquery.imageeditor.ext.js"></script>
+	<link href="lib/jquery-ui/css/smoothness/jquery-ui.css" rel="Stylesheet" type="text/css" /> 
+	<link href="lib/jquery.imageeditor.css" rel="Stylesheet" type="text/css" /> 
+<style>
+
+</style>
+<script>
+
+////////////////////////////////////////////////////////////////////////////////
+// Initialization code
+////////////////////////////////////////////////////////////////////////////////
+
+$(window).load(init);
+
+function init() {
+	var image= $('img.rotateresize');
+	image.hide();
+	var imageeditor = $('.imageeditorcontainer').imageeditor({
+            width:$(window).width()*0.48,
+            height:$(window).height()*0.9,
+            image:{
+                source:image.attr('src'),
+                width:image.width(),
+                height:image.height(),
+            },
+        });
+		imageeditor.selectImage();
+		
+		var image2= $('img.rotateresize2');
+	image2.hide();
+	var imageeditor2 = $('.imageeditorcontainer2').imageeditor({
+            width:$(window).width()*0.48,
+            height:$(window).height()*0.9,
+            image:{
+                source:image2.attr('src'),
+                width:image2.width(),
+                height:image2.height(),
+            },
+        });
+		imageeditor2.selectImage();
+		
+		
+}
+
+
+</script>
+</head><body>
+  
+<div class='imageeditorcontainer' style='float:right;' ></div>
+<div class='imageeditorcontainer2' style='float:left;' ></div>
+<img class='rotateresize'src='image.jpg' />
+<img class='rotateresize2'src='image2.jpg' />
+	
+	
+   </body></html>

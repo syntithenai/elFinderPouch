@@ -1,0 +1,44 @@
+
+
+blur:jsmanipulate
+brightness:jsmanipulate
+bump:jsmanipulate
+circle smear:jsmanipulate
+contrast:jsmanipulate
+cross smear:jsmanipulate
+diffusion:jsmanipulate
+dither:jsmanipulate
+edge detection:jsmanipulate
+emboss:jsmanipulate
+exposure:jsmanipulate
+gain/bias:jsmanipulate
+gamma:jsmanipulate
+greyscale:jsmanipulate
+hue:jsmanipulate
+invert:jsmanipulate
+kaleidoscope:jsmanipulate
+lens distortion:jsmanipulate
+line smear:jsmanipulate
+maximum:jsmanipulate
+median:jsmanipulate
+minimum:jsmanipulate
+noise:jsmanipulate
+oil painting:jsmanipulate
+opacity:jsmanipulate
+pinch/whirl:jsmanipulate
+pixelation:jsmanipulate
+posterize:jsmanipulate
+rgbadjust:jsmanipulate
+saturation:jsmanipulate
+sawtooth ripples:jsmanipulate
+sepia:jsmanipulate
+sharpen:jsmanipulate
+sine ripples:jsmanipulate
+solarize:jsmanipulate
+sparkle:jsmanipulate
+square smear:jsmanipulate
+black and white:jsmanipulate
+triangle ripples:jsmanipulate
+twirle:jsmanipulate
+vignette:jsmanipulate
+water ripples:jsmanipulate

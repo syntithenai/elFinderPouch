@@ -57,14 +57,16 @@ pouchTransport.tree = {
 		var db=pouchTransport.utils.getDatabase(target);
 		var dfr=$.Deferred();
 		if (db && targetId.length>0) {
+			//console.log('get children have db');
 			db.query(
 				function(doc) {
 					if (doc.type=='directory' ||  doc.type=='file') {
 						emit(doc.phash,doc);
 					}
 				},
-				//{key:target},
+				{key:target},
 				function(err,response) {
+					//console.log('getcChildren done query');
 					if (err) {
 						console.log(err);
 						dfr.reject();
@@ -79,9 +81,11 @@ pouchTransport.tree = {
 					}
 				}
 			);
+			//console.log('get children called query');
 		} else {
 			dfr.resolve([]);
 		}
+		//console.log('get children ret dfr');
 		return dfr;
 	},
 	getChildFolders : function(target) {

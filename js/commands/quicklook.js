@@ -374,8 +374,8 @@ elFinder.prototype.commands.quicklook = function() {
 			i, p;
 		
 		
-		width  = o.width  > 0 ? parseInt(o.width)  : $(this).parents('.elfinder').css('width'); //800;	
-		height = o.height > 0 ? parseInt(o.height) : $(this).parents('.elfinder').css('height'); //400;
+		width  = o.width  > 0 ? parseInt(o.width)  : $(window).width()*0.9; //800;	
+		height = o.height > 0 ? parseInt(o.height) : $(window).height()*0.84; //400;
 
 		fm.one('load', function() {
 			parent = fm.getUI();

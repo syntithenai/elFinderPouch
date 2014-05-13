@@ -45,8 +45,10 @@ $.fn.elfinderdialog = function(opts) {
 				.draggable({ handle : '.ui-dialog-titlebar',
 					     containment : 'document' })
 				.css({
-					width  : $(this).parents('.elfinder').css('width'), //opts.width,
-					height : $(this).parents('.elfinder').css('height')
+					width  : opts.width,
+					height : opts.height
+					//width  : $(this).parents('.elfinder').css('width'), //opts.width,
+					//height : $(this).parents('.elfinder').css('height')
 				})
 				.mousedown(function(e) {
 					e.stopPropagation();

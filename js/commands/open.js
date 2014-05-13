@@ -81,7 +81,7 @@ elFinder.prototype.commands.open = function() {
 				return dfrd.reject(['errOpen', file.name, 'errPerm']);
 			}
 			var mimeParts=file.mime.split("/");
-			if (mimeParts[0]=="text" || file.mime=="image/svg+xml") {
+			if (mimeParts[0]=="text" || file.mime=="image/svg+xml"|| file.mime=="application/json") {
 				// redirect to edit
 				//console.log('what now, direct edit',this.fm,fm);
 				this.fm.exec('edit',[file.hash],{}).then(function(res) {
@@ -93,30 +93,59 @@ elFinder.prototype.commands.open = function() {
 					syncOnFail : true
 				});*/
 			} else {
-				if (pouchTransport.utils.isCouch(file.hash)) {
-					//console.log('HAVE COUCH');
-					var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
-					srcParts.push(file._id);
-					srcParts.push('fileContent');
-					//console.log('open couch window',srcParts);
-					window.open(srcParts.join("/"));
-					//openWindow(file,srcParts.join("/"),dfrd);
-				} else if (pouchTransport.utils.isLocalPouch(file.hash))  {
+				var	createReader = function(file, content) {
+					var dfrd = $.Deferred(),
+					ta   = $('<div class="elfinder-epub"  id="'+file.id+'-epub"></div>'),
+					cancel = function() {
+						console.log('close READER cancel');
+						ta.elfinderdialog('close');
+						ta.remove();
+						dfrd.reject();
+					},opts = {
+						title   : file.name,
+						width   :  $(window).width()*0.97,
+						height   :  $(window).height()*0.97,
+						buttons : {},
+						close   : function() { 
+							console.log('close READER');
+							$(this).elfinderdialog('destroy'); 
+							ta.remove();
+							//ta.editor && ta.editor.close(ta[0], ta.editor.instance);
+							
+						},
+						open    : function() { 
+							//fm.disable();
+							pouchTransportConfig.readers.createReader(content,ta);
+						}
+						
+					};	
+					opts.buttons[fm.i18n('Close')] = cancel;					
+					fm.dialog(ta, opts).attr('id', file.id);
+					
+					//return dfrd.resolve();
+				};		
+				// always want blob for epub
+				if (pouchTransport.utils.isLocalPouch(file.hash) || file.mime=='application/epub+zip')  {
 					pouchTransport.utils.getAttachment(file.hash).then(function(bs) {
 						if (bs) {
 							var mimeParts=file.mime.split("/");
-							if (mimeParts[0]!='video') {
-								bs = new Blob([bs],{type: file.mime});
-								//console.log('BS',bs);
-								openWindow(file,URL.createObjectURL(bs),dfrd);
+							// SPECIAL CASES  FOR OPENING FOR CERTAIN MIME TYPES
+							if (file.mime=='application/epub+zip') {
+								var bs = new Blob([bs],{type: file.mime});
+								createReader(file,bs);
 							} else {
 								bs = new Blob([bs],{type: file.mime});
-								window.open(URL.createObjectURL(bs));
-								//openWindow(file,URL.createObjectURL(bs),dfrd);
+								openWindow(file,URL.createObjectURL(bs),dfrd);
 							}
 						}
 						//console.log('loaded attachment',file.name,file.hash);
 					});
+				} else if (pouchTransport.utils.isCouch(file.hash)) {
+					//console.log('HAVE COUCH return url');
+					var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
+					srcParts.push(file._id);
+					srcParts.push('fileContent');
+					window.open(srcParts.join("/"));
 				} else {
 					if (!(url = fm.url(/*file.thash || */file.hash))) {
 						url = fm.options.url;

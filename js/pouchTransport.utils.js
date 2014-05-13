@@ -239,6 +239,9 @@ pouchTransport.utils = {
 		});
 		return ret;
 	},
+	isPouch : function(target) {
+		return pouchTransport.utils.isLocalPouch(target) || pouchTransport.utils.isCouch(target);
+	},
 	isLocalPouch : function(target) {
 		var ret=false;
 		var volume=pouchTransport.utils.volumeFromHash(target);
@@ -381,24 +384,36 @@ pouchTransport.utils = {
 	fixNameConflicts : function(targets,dst) {
 		return $.Deferred().resolve(targets);
 	},
-	fileAsURL : function(file) {		
+	fileAsURL : function(file,forceBlob,width,height) {		
 		var dfr=$.Deferred();
 		// full couch database server direct from database
-		if (pouchTransport.utils.isCouch(file.hash)) {
-			var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
-			srcParts.push(file._id);
-			url=srcParts.join("/");
-			dfr.resolve(url);
-		// local file, serve the whole file as a data url
-		} else if (pouchTransport.utils.isLocalPouch(file.hash))  {
+		console.log('fileasurl',file,forceBlob);
+		if (forceBlob || pouchTransport.utils.isLocalPouch(file.hash))  {
+		console.log('pouch');
 			var pouch=JSON.parse(JSON.stringify(file));
 			pouchTransport.utils.getAttachment(pouch.hash).then(function(bs) {
 				if (bs && pouch) {
-					bs = new Blob([bs],{type: pouch.mime});
-					url=URL.createObjectURL(bs);
-					dfr.resolve(url);
-				}
+					var fr=new FileReader();
+					fr.onload=function(e) {
+						//console.log('got',e.target.result);
+						dfr.resolve(e.target.result);
+					}
+					var bs = new Blob([bs],{type: pouch.mime});
+					console.log('read',bs,'as dataurl');
+					fr.readAsDataURL(bs);
+				} else dfr.resolve('');
 			});
+		} else if (pouchTransport.utils.isCouch(file.hash)) {
+		console.log('couch');
+			var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
+			srcParts.push(file._id);
+			srcParts.push("fileContent");
+			url=srcParts.join("/");
+			dfr.resolve(url);
+		// local file, serve the whole file as a data url
+		}  else {
+		console.log('NONE');
+			dfr.resolve('');
 		}
 		return dfr;
 	},

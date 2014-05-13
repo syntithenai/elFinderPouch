@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+
+  <div id="log"></div>
+
+  <script id="worker1" type="javascript/worker">
+    // This script won't be parsed by JS engines
+    // because its type is javascript/worker.
+    self.onmessage = function(e) {
+		var data = e.data;
+		eval ('data.me="ss"');
+		if (data.url) {
+			var url = data.url;
+			var index = url.indexOf('workertest.html');
+			if (index != -1) {
+			  url = url.substring(0, index);
+			}
+			importScripts(url+'lib/glfx.js');
+		}
+		self.postMessage('msg from worker'+data.me);
+    };
+    // Rest of your worker code goes here.
+  </script>
+
+  <script>
+    function log(msg) {
+      // Use a fragment: browser will only render/reflow once.
+      var fragment = document.createDocumentFragment();
+      fragment.appendChild(document.createTextNode(msg));
+      fragment.appendChild(document.createElement('br'));
+
+      document.querySelector("#log").appendChild(fragment);
+    }
+
+    var blob = new Blob([document.querySelector('#worker1').textContent],{type:'text/javascript'});
+
+    var worker = new Worker(window.URL.createObjectURL(blob));
+    worker.onmessage = function(e) {
+      log("Received: " + e.data);
+    }
+	worker.addEventListener('message', function(e){console.log(e.data);}, false);
+	worker.addEventListener('error', function(e) {console.log(['ERROR: Line ', e.lineno, ' in ', e.filename, ': ', e.message]);}, false);
+	worker.postMessage({url: document.location.href}); // Start the worker.
+	</script>
+</body>
+</html>

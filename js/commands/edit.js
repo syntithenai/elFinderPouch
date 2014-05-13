@@ -19,7 +19,10 @@ elFinder.prototype.commands.edit = function() {
 		filter = function(files) {
 			return $.map(files, function(file) {
 				//return file;
-				return (file.mime.indexOf('text/') === 0 || file.mime.indexOf('image/svg+xml') === 0 || $.inArray(file.mime, mimes) !== -1) 
+				return (file.mime.indexOf('text/') === 0 || 
+					file.mime.indexOf('application/json') === 0||
+					file.mime.indexOf('image/svg+xml') === 0|| file.mime.indexOf('image/jpeg') === 0|| 
+					file.mime.indexOf('image/gif') === 0|| file.mime.indexOf('image/png') === 0 || $.inArray(file.mime, mimes) !== -1) 
 					&& file.mime.indexOf('text/rtf')
 					&& (!self.onlyMimes.length || $.inArray(file.mime, self.onlyMimes) !== -1)
 					&& file.read && file.write ? file : null;
@@ -34,11 +37,16 @@ elFinder.prototype.commands.edit = function() {
 		 * @param  String  content  file content
 		 * @return $.Deferred
 		 **/
-		dialog = function(id, file, content) {
+		dialog = function(id, file, content, imageEditor) {
 
-			var dfrd = $.Deferred(),
-				ta   = $('<textarea class="elfinder-file-edit" rows="20" id="'+id+'-ta">'+fm.escape(content)+'</textarea>'),
-				save = function() {
+			var ta, dfrd = $.Deferred();
+				if (imageEditor) {
+					var src=URL.createObjectURL(content);
+					ta   = $('<img id="'+id+'-img" src="'+src+'" />');
+				} else {
+					ta   = $('<textarea class="elfinder-file-edit" rows="20" id="'+id+'-ta">'+fm.escape(content)+'</textarea>');
+				}
+				var save = function() {
 					ta.editor && ta.editor.save(ta[0], ta.editor.instance);
 					dfrd.resolve(ta.getContent());
 					ta.elfinderdialog('close');
@@ -49,7 +57,7 @@ elFinder.prototype.commands.edit = function() {
 				},
 				opts = {
 					title   : file.name,
-					width   : self.options.dialogWidth || 450,
+					width   : self.options.dialogWidth || $(window).width()*0.97,
 					buttons : {},
 					close   : function() { 
 						ta.editor && ta.editor.close(ta[0], ta.editor.instance);
@@ -153,38 +161,52 @@ elFinder.prototype.commands.edit = function() {
 				fm.error(error)
 				return dfrd.reject(error);
 			}
-			
-			fm.request({
-				data   : {cmd : 'get', target  : hash},
-				notify : {type : 'openfile', cnt : 1},
-				syncOnFail : true
-			})
-			.done(function(data) {
-				dialog(id, file, data.content)
-					.done(function(content) {
-						fm.request({
-							options : {type : 'post'},
-							data : {
-								cmd     : 'put',
-								target  : hash,
-								content : content
-							},
-							notify : {type : 'save', cnt : 1},
-							syncOnFail : true
-						})
-						.fail(function(error) {
+			if (pouchTransport.utils.isPouch(file.hash) && (file.mime.indexOf('image/jpeg') === 0|| 
+				file.mime.indexOf('image/gif') === 0|| file.mime.indexOf('image/png') === 0))  {
+				console.log('editing pouch bitmap image');
+				pouchTransport.utils.getAttachment(file.hash).then(function(data) {
+				console.log('eloaded image');
+					dialog(id,file,data,true)
+						.done(function(dataToSave) {
+						console.log('done dialog now SAVE');
+							pouchTransport.utils.save(file,dataToSave);
+							dfrd.resolve(dataToSave);
+						}).fail(function(error) {
 							dfrd.reject(error);
 						})
-						.done(function(data) {
-							data.changed && data.changed.length && fm.change(data);
-							dfrd.resolve(data);
-						});
-					})
-			})
-			.fail(function(error) {
-				dfrd.reject(error);
-			})
-
+				});
+			} else {
+				fm.request({
+					data   : {cmd : 'get', target  : hash},
+					notify : {type : 'openfile', cnt : 1},
+					syncOnFail : true
+				})
+				.done(function(data) {
+					dialog(id, file, data.content)
+						.done(function(content) {
+							fm.request({
+								options : {type : 'post'},
+								data : {
+									cmd     : 'put',
+									target  : hash,
+									content : content
+								},
+								notify : {type : 'save', cnt : 1},
+								syncOnFail : true
+							})
+							.fail(function(error) {
+								dfrd.reject(error);
+							})
+							.done(function(data) {
+								data.changed && data.changed.length && fm.change(data);
+								dfrd.resolve(data);
+							});
+						})
+				})
+				.fail(function(error) {
+					dfrd.reject(error);
+				})
+			}
 			return dfrd.promise();
 		};
 	

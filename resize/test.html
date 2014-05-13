@@ -1,0 +1,28 @@
+<script src="jquery.js"></script> 
+<script src="jquery-ui.js"></script> 
+<script src="binaryajax.js"></script> 
+<script src="exif.js"></script> 
+<script src="jquery.cropzoom.js"></script> 
+<script src="jquery.canvasResize.js"></script> 
+<script src="canvasResize.js"></script>
+
+<script> 
+$('input[name=photo]').change(function(e) {
+	consle.log
+    var file = e.target.files[0];
+    canvasResize(file, {
+          width: 300,
+          height: 0,
+          crop: false,
+          quality: 80,
+          //rotate: 90,
+          callback: function(data, width, height) {
+          $(img).attr('src', data);
+          }
+    });
+});
+</script> 
+HI
+<form>
+<input name='photo' type='file' />
+</form>

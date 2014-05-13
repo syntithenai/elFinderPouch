@@ -1,5 +1,6 @@
 var MimeConverter={};
-MimeConverter.extensionMapping={'epub':'application/epub+zip',
+MimeConverter.extensionMapping={
+'epub':'application/epub+zip',
 'jar':'application/java-archive',
 'json':'application/json',
 'doc dot':'application/msword',

@@ -1,14 +1,44 @@
 // CONFIGURATION FOR EDITORS
-// HTML EDITOR
-//pouchTransportConfig.editors={};
-var pouchTransportConfig={editors:{},initEditors: function() {
-	
-	
-}};
-pouchTransportConfig.editors.HTMLEditor={
-	mimes : ['text/html'],  //types to edit with tinyMCE
+var pouchTransportConfig={editors:{}};
+pouchTransportConfig.editors.JSONEditor={
+	mimes : ['application/json'],  
+	load : function(textarea) {
+		console.log('EDIT',textarea,arguments, $('#'+textarea.id).val());
+		var editorDiv=$("<div id='jsoneditor-"+textarea.id+"' ></div>");
+		var ww=$(window).width();
+		var wh=$(window).height();
+		editorDiv.css({width: ww*0.95,height: wh*0.9});
+		$('#'+textarea.id).hide().after(editorDiv);
+		var val= $('#'+textarea.id).val();
+		if ($.trim(val)=='') val='{}';
+		try {
+			val=JSON.stringify(JSON.parse(val));
+		} catch (e) {
+			val='{"ERROR":'+e.toString()+'}';
+		}
+		var editor = new jsoneditor.JSONEditor(editorDiv.get(0), {
+			mode: 'tree',
+			modes: ['code', 'form', 'text', 'tree', 'view'], // allowed modes
+			error: function (err) {
+			  console.log(err);
+			}
+		},val);	
+		$('#'+textarea.id).data('jsoneditor',editor);
+	},
+	close : function(textarea, instance) {
+		//console.log('close',textarea,instance,arguments);
+	},
+	save : function(textarea, editor) {
+		//console.log('save',textarea,editor,arguments);		
+		var editor=$('#'+textarea.id).data('jsoneditor');
+		textarea.value = editor.get();
+	}
+}
+pouchTransportConfig.editors.imageEditor={
+	dmimes : ['image/jpeg','image/gif','image/png'],  
 	load : function(textarea) {
 		//console.log('EDIT',textarea,arguments);
+		tinymce.init({});
 		tinymce.execCommand('mceAddEditor', false, textarea.id);
 		
 	},
@@ -24,7 +54,77 @@ pouchTransportConfig.editors.HTMLEditor={
 		tinymce.execCommand('mceRemoveEditor', false, textarea.id);
 	}
 }
-
+// HTML EDITOR
+pouchTransportConfig.editors.HTMLEditor={
+	mimes : ['text/html'],  //types to edit with tinyMCE
+	init : function() {
+	},
+	load : function(textarea) {
+		CKEDITOR.disableAutoInline = true;
+		CKEDITOR.inline( textarea.id);
+	},
+	close : function(textarea, instance) {
+		
+	},
+	save : function(textarea, editor) {
+		//console.log('save',textarea,editor,arguments);
+		var data = CKEDITOR.instances[textarea.id].getData();
+		console.log('save',textarea,editor,data);
+	}
+}
+/*
+pouchTransportConfig.editors.tinyMCEHTMLEditor={
+	mimes : ['text/html'],  //types to edit with tinyMCE
+	init : function() {
+		tinymce.init({
+			plugins: [
+				"table advlist autolink lists link image charmap print preview hr anchor pagebreak media",
+				"searchreplace wordcount visualblocks visualchars code fullscreen",
+				"media nonbreaking save contextmenu",
+				"template paste fullpage",
+			],
+			toolbar1: "removeformat | formatselect bold italic underline strikethrough subscript superscript | alignleft aligncenter alignright alignjustify  | table blockquote | bullist numlist link unlink anchor image media hr charmap template pagebreak | searchreplace print code",
+			contextmenu: "cut copy paste",
+			image_advtab: true,
+			menubar:false,
+			toolbar_items_size:'large',
+			//object_resizing : 'table',
+			//webkit_fake_resize : 1,
+			inline:1,
+			paste_data_images: true,
+			paste_as_text: true,
+			browser_spellcheck : true,
+			image_advtab:false,
+			file_browser_callback: function (field_name, url, type, win) {
+			  tinymce.activeEditor.windowManager.open({
+				file: '/elfinderPouch/fileselector.html',// use an absolute path!
+				title: 'elFinder',
+				width: 900,  
+				height: 450,
+				resizable: 'yes'
+			  }, {
+				setUrl: function (url) {
+				  win.document.getElementById(field_name).value = url;
+				}
+			  });
+			  return false;
+			}
+		});
+	},
+	load : function(textarea) {
+		tinymce.execCommand('mceAddEditor', false, textarea.id);
+	},
+	close : function(textarea, instance) {
+		tinymce.execCommand('mceRemoveEditor', false, textarea.id);
+	},
+	save : function(textarea, editor) {
+		//console.log('save',textarea,editor,arguments);
+		
+		textarea.value = tinyMCE.get(textarea.id).selection.getContent({format : 'html'});
+		tinymce.execCommand('mceRemoveEditor', false, textarea.id);
+	}
+}
+*/
 // THERE ARE A FEW VARIATIONS OF CODEMIRROR
 pouchTransportConfig.editors.codeMirrorPlain={
 	mimes : ['text/plain'], 
@@ -69,18 +169,18 @@ pouchTransportConfig.editors.codeMirrorJS.mimes=["text/javascript"];
 pouchTransportConfig.editors.svgEditor={
 	mimes : ['image/svg+xml'],
 	load : function(textarea) {
-		console.log('svg load');
+		console.log('svg load',textarea.id);
 		// append iframe to dom
-		var iframe=$("<iframe id='svgeditor'  src='svg-edit/svg-editor.html?extensions=ext-xdomain-messaging.js' />");
+		var iframe=$("<iframe id='svgeditor-"+textarea.id+"'  src='lib/svg-edit/svg-editor.html?extensions=ext-xdomain-messaging.js' />");
 		var ww=$(window).width();
 		var wh=$(window).height();
 		iframe.css({width: ww*0.95,height: wh*0.9});
 		$('#'+textarea.id).hide().after(iframe);
 		
-		var svgInit=function() {
+		var svgInit=function(ifrm) {
 			console.log('editor_ready();');
-			var canvas = new EmbeddedSVGEdit(iframe[0]);	
-			iframe.parent().data('canvas',canvas)	
+			var canvas = new EmbeddedSVGEdit(ifrm);	
+			$(ifrm).parent().data('canvas',canvas)	;
 			if ($.trim($('#'+textarea.id).val())!='') {
 				canvas.setSvgString($('#'+textarea.id).val());
 			} else {
@@ -90,11 +190,11 @@ pouchTransportConfig.editors.svgEditor={
 		
 		$(iframe).ready(function() {
 			console.log('SVG iframe ready');
-			var ifrm = iframe[0];
+			var ifrm = $('#svgeditor-'+textarea.id).get(0);
 			// waiting for real load
 			(function(){
 				try {
-					ifrm.contentWindow.svgEditor.ready(function() { svgInit();});
+					ifrm.contentWindow.svgEditor.ready(function() { svgInit(ifrm);});
 				}
 				catch (Ex){
 					setTimeout(svgInit, 1000);
@@ -139,44 +239,49 @@ pouchTransportConfig.editors.svgEditor={
 	}
 };
 // SHEET EDITING
-var imagePath='jquery.sheet/images/';
-// sheet has to be included before this file
-$.sheet.menuLeft='<div><a href="#" onclick="sheetInstance.toggleFullScreen(); $(\'#lockedMenu\').toggle(); return false;" title="Toggle Full Screen"><img alt="Toggle Full Screen" src="'+imagePath+'arrow_out.png"/></a><a onclick="sheetInstance.cellUndoable.undoOrRedo(true); return false;" title="Undo"><img src="'+imagePath+'arrow_undo.png"/></a><a onclick="sheetInstance.cellUndoable.undoOrRedo(); return false;" title="Redo"><img src="'+imagePath+'arrow_redo.png"/></a><a onclick="sheetInstance.merge(); return false;" title="Merge"><img src="'+imagePath+'arrow_join.png"/></a><a onclick="sheetInstance.unmerge(); return false;" title="Unmerge"><img src="'+imagePath+'arrow_divide.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleWrap\'); return false;" title="Wrap Text"><img  src="'+imagePath+'text_horizontalrule.png"/></a><a href="#" onclick="sheetInstance.fillUpOrDown(); return false;" title="Fill Down"><img alt="Fill Down" src="'+imagePath+'arrow_down.png"/></a><a href="#" onclick="sheetInstance.fillUpOrDown(true); return false;" title="Fill Up"><img alt="Fill Up" src="'+imagePath+'arrow_up.png"/></a></div>';
-$.sheet.menuRight='<div><a class="cellStyleToggle" onclick="sheetInstance.fontReSize(\'up\');  return false;" title="Font Size -"><img src="'+imagePath+'font_add.png"/></a><a class="cellStyleToggle" onclick="sheetInstance.fontReSize(\'down\'); return false;" title="Font Size +"><img src="'+imagePath+'font_delete.png"/></a>  <a href="#" onclick="sheetInstance.cellStyleToggle(\'styleBold\'); return false;" title="Bold"><img alt="Bold" src="'+imagePath+'text_bold.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleItalics\'); return false;" title="Italic"><img alt="Italic" src="'+imagePath+'text_italic.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleUnderline\', \'styleLineThrough\'); return false;" title="Underline"><img alt="Underline" src="'+imagePath+'text_underline.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleLineThrough\', \'styleUnderline\'); return false;" title="Strikethrough"><img alt="Strikethrough" src="'+imagePath+'text_strikethrough.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleLeft\', \'styleCenter styleRight\'); return false;" title="Align Left"><img alt="Align Left" src="'+imagePath+'text_align_left.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleCenter\', \'styleLeft styleRight\'); return false;" title="Align Center"><img alt="Align Center" src="'+imagePath+'text_align_center.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleRight\', \'styleLeft styleCenter\'); return false;" title="Align Right"><img alt="Align Right" src="'+imagePath+'text_align_right.png"/></a><span class="colorPickers"><input title="Foreground color" class="colorPickerFont" style="background-image: url(\''+imagePath+'palette.png\') ! important; width: 16px; height: 16px;"/><input title="Background Color" class="colorPickerCell" style="background-image: url(\''+imagePath+'palette_bg.png\') ! important; width: 16px; height: 16px;"/></span></div>';
+var imagePath='lib/jquery.sheet/images/';
 pouchTransportConfig.editors.sheetEditor={
 	mimes : ['text/sheet'], 
+	init : function () {
+		
+		// sheet has to be included before this file
+		$.sheet.menuLeft='<div><a href="#" onclick="sheetInstance.toggleFullScreen(); $(\'#lockedMenu\').toggle(); return false;" title="Toggle Full Screen"><img alt="Toggle Full Screen" src="'+imagePath+'arrow_out.png"/></a><a onclick="sheetInstance.cellUndoable.undoOrRedo(true); return false;" title="Undo"><img src="'+imagePath+'arrow_undo.png"/></a><a onclick="sheetInstance.cellUndoable.undoOrRedo(); return false;" title="Redo"><img src="'+imagePath+'arrow_redo.png"/></a><a onclick="sheetInstance.merge(); return false;" title="Merge"><img src="'+imagePath+'arrow_join.png"/></a><a onclick="sheetInstance.unmerge(); return false;" title="Unmerge"><img src="'+imagePath+'arrow_divide.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleWrap\'); return false;" title="Wrap Text"><img  src="'+imagePath+'text_horizontalrule.png"/></a><a href="#" onclick="sheetInstance.fillUpOrDown(); return false;" title="Fill Down"><img alt="Fill Down" src="'+imagePath+'arrow_down.png"/></a><a href="#" onclick="sheetInstance.fillUpOrDown(true); return false;" title="Fill Up"><img alt="Fill Up" src="'+imagePath+'arrow_up.png"/></a></div>';
+		$.sheet.menuRight='<div><a class="cellStyleToggle" onclick="sheetInstance.fontReSize(\'up\');  return false;" title="Font Size -"><img src="'+imagePath+'font_add.png"/></a><a class="cellStyleToggle" onclick="sheetInstance.fontReSize(\'down\'); return false;" title="Font Size +"><img src="'+imagePath+'font_delete.png"/></a>  <a href="#" onclick="sheetInstance.cellStyleToggle(\'styleBold\'); return false;" title="Bold"><img alt="Bold" src="'+imagePath+'text_bold.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleItalics\'); return false;" title="Italic"><img alt="Italic" src="'+imagePath+'text_italic.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleUnderline\', \'styleLineThrough\'); return false;" title="Underline"><img alt="Underline" src="'+imagePath+'text_underline.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleLineThrough\', \'styleUnderline\'); return false;" title="Strikethrough"><img alt="Strikethrough" src="'+imagePath+'text_strikethrough.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleLeft\', \'styleCenter styleRight\'); return false;" title="Align Left"><img alt="Align Left" src="'+imagePath+'text_align_left.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleCenter\', \'styleLeft styleRight\'); return false;" title="Align Center"><img alt="Align Center" src="'+imagePath+'text_align_center.png"/></a><a href="#" onclick="sheetInstance.cellStyleToggle(\'styleRight\', \'styleLeft styleCenter\'); return false;" title="Align Right"><img alt="Align Right" src="'+imagePath+'text_align_right.png"/></a><span class="colorPickers"><input title="Foreground color" class="colorPickerFont" style="background-image: url(\''+imagePath+'palette.png\') ! important; width: 16px; height: 16px;"/><input title="Background Color" class="colorPickerCell" style="background-image: url(\''+imagePath+'palette_bg.png\') ! important; width: 16px; height: 16px;"/></span></div>';
+		if ($.fn.sheet) {
+				//console.log('show sheet');
+				try {
+					$.sheet.preLoad("lib/jquery.sheet/");
+				} catch (e) {console.log('sheet err',e);}
+		} else  {
+			if (false) console.log('sheet lib not loaded');	
+		}
+	},
 	load : function(textarea) {
-		console.log('LOAD SHEET',textarea.id,document.getElementById(textarea.id));
+		//console.log('LOAD SHEET',textarea.id,document.getElementById(textarea.id));
 		var sheet=$("<div id='sheet-"+textarea.id+"' ></div>");
 		var si=sheet.data('sheetInstance'); // sheet instance
-		//if (si) {
-			//$.sheet.dts.toTables.xml($('#'+textarea.id).val());
-		//}
-		console.log($('#'+textarea.id).val())
 		sheet.html($.sheet.dts.toTables.xml($('#'+textarea.id).val()));
 		$('#'+textarea.id).hide().after(sheet);
 		sheet.sheet({
 				menuLeft: function(jS) { return  $.sheet.menuLeft.replace(/sheetInstance/g, "$.sheet.instance[" + jS.I + "]"); },
 				menuRight: function(jS) { 
-					var menu = $.sheet.menuRight.replace(/sheetInstance/g, "$.sheet.instance[" + jS.I + "]"); menu = $(menu); menu.find('.colorPickerCell').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('background-color', $(this).val()); }); menu.find('.colorPickerFont').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('color', $(this).val());}); menu.find('.colorPickers').children().eq(1).css('background-image', "url('jquery.sheet/images/palette.png')");  menu.find('.colorPickers').children().eq(3).css('background-image', "url('jquery.sheet/images/palette_bg.png')");return menu;}
+					var menu = $.sheet.menuRight.replace(/sheetInstance/g, "$.sheet.instance[" + jS.I + "]"); menu = $(menu); menu.find('.colorPickerCell').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('background-color', $(this).val()); }); menu.find('.colorPickerFont').colorPicker().change(function(){ $.sheet.instance[jS.I].cellChangeStyle('color', $(this).val());}); menu.find('.colorPickers').children().eq(1).css('background-image', "url('"+imagePath+"palette.png')");  menu.find('.colorPickers').children().eq(3).css('background-image', "url('"+imagePath+"palette_bg.png')");return menu;}
 			});
 	},
 	save : function(textarea, editor) {
 		var sheet=$("#sheet-"+textarea.id);
 		var si=sheet.data('sheetInstance'); // sheet instance
 		if (si) {
-			// save in XML with formulas
-			//console.log($.sheet.dts.fromTables.xml(si));
-			//toSave[key]=$('<div />').html($.sheet.dts.fromTables.xml(si)+' ').html();
-			// FOR NOW force to HTML with rendered values
-			//var sheetClone=si.tables();
-			//var toSave=$('<div />').html(sheetClone).html();
 			var toSave=$('<div />').html($.sheet.dts.fromTables.xml(si)+' ').html()
 			$('#'+textarea.id).val(toSave);
 		}
 	}
 }
+$(document).ready(function() {
+	$.each(pouchTransportConfig.editors,function(key,val) {
+		if (typeof val.init=='function') {
+			val.init();
+		}
+	});
 
-
-
-
+});

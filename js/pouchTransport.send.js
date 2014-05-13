@@ -87,7 +87,7 @@ pouchTransport.send = function(options,fm) {
 			// returns {tree:[]}
 		case 'ls' :
 		case 'open' :
-			//console.log('OPEN',options.data.target,options.data,options);
+			console.log('OPEN',options.data.target,options.data,options);
 			// HAVE WE CHOSEN WHERE TO OPEN
 			var target=$.trim(options.data.target);
 			var ret={};
