@@ -118,7 +118,8 @@
 	<script src="js/pouchTransport.send.js"></script>
 	<script src="js/pouchTransport.upload.js"></script>
 	<script src="js/elFinder.mimeMap.js"></script>
-	<script src="lib/tinymce/tinymce.min.js"></script>
+	<!--script src="lib/tinymce/tinymce.min.js"></script-->
+	<script src="lib/ckeditor/ckeditor.js"></script>
 	
 </head>
 <body>
@@ -128,33 +129,30 @@
 </html>
 
 <script type="text/javascript">
-  var FileBrowserDialogue = {
-    init: function() {
-      // Here goes your code for setting your custom things onLoad.
-    },
-    mySubmit: function (URL) {
-      // pass selected file path to TinyMCE
-      parent.tinymce.activeEditor.windowManager.getParams().setUrl(URL);
 
-      // close popup window
-      parent.tinymce.activeEditor.windowManager.close();
-    }
-  }
+function getUrlParam(paramName) {
+	var reParam = new RegExp('(?:[\?&]|&amp;)' + paramName + '=([^&]+)', 'i') ;
+	var match = window.location.search.match(reParam) ;
+	return (match && match.length > 1) ? match[1] : '' ;
+}
 
-  $(document).ready(function() {
+$(document).ready(function() {
+	var funcNum = getUrlParam('CKEditorFuncNum');
+	console.log('ckedifuncnum',funcNum);
 	var localConf=JSON.parse(JSON.stringify(pouchTransport));
 	localConf.transport = pouchTransport;
 	localConf.lang = 'en';
-	localConf.getFileCallback= function(file) { // editor callback
-// actually file.url - doesnt work for me, but file does. (elfinder 2.0-rc1)
-		console.log('picked file',file);
-        pouchTransport.utils.fileAsURL(file,true).then(function(result) {
-			console.log('created link',result);
-			FileBrowserDialogue.mySubmit(result); 
-		}); // pass selected file path to TinyMCE 
-    };
 	localConf.url='php/connector.php';
-	console.log('create filepicker');
-    var elf = $('#finderfilepicker').elfinder(localConf).elfinder('instance');      
-  });
+	localConf.getFileCallback = function(file) {
+		console.log('picked file',file);
+		pouchTransport.utils.fileAsURL(file,true).then(function(result) {
+			console.log('created link',result);
+			window.opener.CKEDITOR.tools.callFunction(funcNum, result);
+			window.close();
+		}); // pass selected file path to TinyMCE 
+	};
+	localConf.resizable= false;
+	var elf = $('#finderfilepicker').elfinder(localConf).elfinder('instance');
+});
+
 </script>

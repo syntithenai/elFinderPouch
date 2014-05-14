@@ -7,7 +7,17 @@ Better to deal with an online database via sync
 
 
 CURRENT
+ckeditor
+- toolbar
+	- menu dropdowns
+		- file (preview, insert file), style(b,i,...), insert (iamge,video,div,br,...), 
+
+
+
 IMAGEEDITOR
+
+
+
 
 BUG ON paste - parents and attachments are ..
 zip - BUG unzip all in same folder
@@ -58,7 +68,7 @@ TODO  release 1
 - get info (sum sizes /per file)
 - epub reader
 - elFInder integration back into RTE and svg edit
-- svg edit
+- svg edit 
 - plugin file editors
 	- jquery sheet - initially only .sheet.html files
 	- codemirror text editor
@@ -96,7 +106,7 @@ DREAMS
 - dropbox, google docs, webdav ..
 - remote transfers - currently all data runs through the browser controlling the copy. remote to remote copy should be direct if possible
 -- ssh client
--FTP sync
+- FTP sync
 
 
 
@@ -123,3 +133,4 @@ first look at security add pw to localhost and iris - need to udpate cors settin
 1/5
 search on steroids - multi database search, searchable flag in db config, tokenised search with multi tokens
 document/review functions across pouchTransport
+14/5

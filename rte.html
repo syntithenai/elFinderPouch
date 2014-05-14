@@ -2,9 +2,57 @@
 <script src="lib/ckeditor/ckeditor.js" ></script>
 <script>
 $(document).ready(function() {
-		CKEDITOR.disableAutoInline = true;
-		CKEDITOR.replace('toedit');
+		//CKEDITOR.disableAutoInline = true;
+		
+		CKEDITOR.replace('toedit',{
+			filebrowserBrowseUrl:'fileselector.html',
+			
+toolbar_Full : [
+     { name: 'links', items: [ 'Link', 'Unlink', 'Anchor' ] },
+	{ name: 'insert', items: [  'Image', 'Table', 'NumberedList', 'BulletedList','HorizontalRule', 'PageBreak', 'Iframe', 'InsertPre' , 'Blockquote', 'CreateDiv','Symbol','EqnEditor','allMedias','CodeSnippet','qrc','Youtube','leaflet','Templates'] },
+    { name: 'forms', items: [ 'Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField' ] },
+    '/',
+    { name: 'basicstyles', groups: [ 'basicstyles', 'cleanup','styles' ], items: [ 'RemoveFormat','Format','Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' , 'TransformTextSwitcher'] },
+    { name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align' ], items: [ 'Outdent', 'Indent', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock' ] },
+	{ name: 'editing',     groups: [ 'find'], items: [ 'Find', 'Replace' ] },
+	{ name: 'translate' ,items:['xdsoft_translater_settings','xdsoft_translater','xdsoft_translater_reverse'] },
+	{ name: 'document',   items: [  'Maximize', 'Source','ShowBlocks'] },
+	
+	],
+
+  toolbar :"Full"
+
+		});
+		
+		;
+		
+		
 })
+
+
+/*	config.extraPlugins='div';
+	config.toolbarGroups = [
+		{ name: 'document',   groups: [  'mode', 'document', 'doctools' ,'find', 'selection','tools','others'  ] },
+		{ name: 'content',   groups: [ 'links','insert','forms','div'] },
+		'/',
+		{ name: 'formatting',   groups: [ 'styles','basicstyles','cleanup','list','indent','blocks','align' ] },
+		];
+		
+		
+		
+		
+	config.toolbar = [
+		{ name: 'document', items: [ 'Source','Maximise','Print', 'Show Blocks','Find','Replace', 'Templates' ] },
+		//{ name: 'translate', items: [ 'Translate Settings','Translate','Translate Reverse', ] },
+		//'/',
+		//{ name: 'content', items: [ 'Link','Unlink','Anchor','Insert Bulleted List','Insert Numbered List','Image','Insert All Medias','Table','Create Div Container','Blockquote','IFrame','Insert Horizontal Rule','Insert Page Break for Printing','Insert Symbol','Insert code snippet','Insert Equation','Embed Youtube Video','Leaflet Map','Insert a ZS Google QR-Code picture'] },
+		//{ name: 'form', items: ['Form','Text Field','Textarea','Button','Image Button','Selection Field','Radio Button','Checkbox','Hidden Field'] },
+		//'/',
+		//{ name: 'formatting', items: [ 'Remove Format','Align Right','Align Left','Center','Justify','Increase Indent','Decrease Indent','Italic','Bold','Underline','Strike Through','Subscript','Superscript'] }
+	];		
+		
+		
+		*/
 </script>
 
 
