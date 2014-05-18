@@ -60,16 +60,35 @@ pouchTransportConfig.editors.HTMLEditor={
 	init : function() {
 	},
 	load : function(textarea) {
-		CKEDITOR.disableAutoInline = true;
-		CKEDITOR.inline( textarea.id);
+		CKEDITOR.replace(textarea.id,{
+			filebrowserBrowseUrl:'fileselector.html',
+			filebrowserVideoBrowseUrl:'fileselector.html?fileType=video',
+			filebrowserImageBrowseUrl:'fileselector.html?fileType=image',
+			extraPlugins: 'video',
+			extraAllowedContent: 'video[*]{*}',
+			toolbar_Full : [
+				 { name: 'links', items: [ 'Link', 'Unlink', 'Anchor' ] },
+				{ name: 'insert', items: [  'Symbol', 'Iframe', 'InsertPre' , 'Blockquote', 'CreateDiv','NumberedList', 'BulletedList','HorizontalRule', 'PageBreak', 'Image', 'Table','Video','Youtube','leaflet','EqnEditor','CodeSnippet','qrc','Templates'] },
+				{ name: 'forms', items: [ 'Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField' ] },
+				'/',
+				{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup','styles' ], items: [ 'RemoveFormat','Format','Bold', 'Italic', 'Underline', 'Strike', 'Subscript', 'Superscript' , 'TransformTextSwitcher'] },
+				{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align' ], items: [ 'Outdent', 'Indent', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock' ] },
+				{ name: 'editing',     groups: [ 'find'], items: [ 'Find', 'Replace' ] },
+				{ name: 'translate' ,items:['xdsoft_translater_settings','xdsoft_translater','xdsoft_translater_reverse'] },
+				{ name: 'document',   items: [  'Maximize', 'Source','ShowBlocks'] },
+			],
+			toolbar :"Full"
+			
+		});
 	},
 	close : function(textarea, instance) {
-		
+		if (CKEDITOR.instances[textarea.id]) CKEDITOR.instances[textarea.id].destroy();
 	},
 	save : function(textarea, editor) {
 		//console.log('save',textarea,editor,arguments);
 		var data = CKEDITOR.instances[textarea.id].getData();
 		console.log('save',textarea,editor,data);
+		CKEDITOR.instances[textarea.id].destroy();
 	}
 }
 /*

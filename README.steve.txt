@@ -6,22 +6,68 @@ In so far as possible the implementation is strictly as a transport layer so tha
 Better to deal with an online database via sync
 
 
+!Process Management
+How do I make managing multiple open windows work?
+ - switching between windows
+ - closing, minimising, .....
+ - window list
+ 
+At the moment all windows are opened in dialogs
+Where an action is taken on multiple selected items, multiple dialogs open.
+
+
+
+! API refactoring
+- get/set files, urls, ...
+	** COUCHTEST  - isCouch, isPouch, ..
+		- elfinder.js (754), quickview, open, view, download, archive, unzip ,........
+		
+	- what does all this mean 
+		- links vs base64 embedded
+		- filemanager vs applications
+		- download vs edit vs view vs archive
+
+		
+		
+
+
+
+
+
+
+
 CURRENT
 ckeditor
 - toolbar
 	- menu dropdowns
 		- file (preview, insert file), style(b,i,...), insert (iamge,video,div,br,...), 
 
+BUGS
+- codemirror corrupt on save
+- quicklook video uses transport URL
+- mime filtering for elfinder is broken
+- set size on save file
+- BUG ON paste - parents and attachments are ..
+- zip - BUG unzip all in same folder
+
 
 
 IMAGEEDITOR
+- allow for scaling on resize
+- workers for additional filters
+	- imageDetails style filters so they can be passed wo workers
+- review filter defaults
+- image as jq selector when initialising plugin
+- resizable editor resize child
+- bookmarklet	
+	DREAMS
+		- drawing tools
+		- selection tools
+		- adding images and blending tools
+		??? IS THERE CROSSOVER HERE WITH SVG-EDIT CAN I USE ONE AND THE SAME (ALSO FOR LAYOUT EDITOR)
 
 
 
-
-BUG ON paste - parents and attachments are ..
-zip - BUG unzip all in same folder
-paste
 
 
 LICENSES
@@ -42,8 +88,6 @@ pouch - Apache
 plucked audio editor - ?
 
 
-
-
 DONE
 - download needs to do object urls, create link click
 - regroup buttons and tidy top toolbar
@@ -60,6 +104,9 @@ JSON EDITOR
 
 BUGS
 - save file on paste
+- files larger than 400M on couch filesystem save empty attachment
+- svg edit save empty
+
 
 TODO  release 1
 -download folder (AZ ZIP)
@@ -107,10 +154,90 @@ DREAMS
 - remote transfers - currently all data runs through the browser controlling the copy. remote to remote copy should be direct if possible
 -- ssh client
 - FTP sync
+- audio conversions
+
+- server based services 
+	- video,audio conversions
+		- streaming
+		
+	
+
+
+
+DOCUMENTATION
+elFinderPouch
+	index.html 
+	fileselector.html  - cut down elFinder for use in RTE, etc
+	
+	files -  folder for webserver based filestorage
+	php - online filesystem connectors
+	css, img, sounds - resource files
+	jquery-ui - jquery and jq UI libraries
+# THE INTERESTING STUFF
+	lib - unmodified library files (except jquery)
+	js  - custom JS
+		i18n
+		proxy
+		commands
+		ui
+
+
+elFinder.js
+elFinder.command.js
+elFinder.history.js
+elFinder.mimeMap.js
+elFinder.options.js
+elFinder.resources.js
+elFinder.version.js
+elFinder.command.js
+jquery.dialogelfinder.js
+jquery.elfinder.js
+
+pouchTransportConfig.databases.js
+pouchTransport.js
+pouchTransport.upload.js
+
+pouchTransport.editors.js
+pouchTransport.readers.js
+
+pouchTransport.send.js
+
+pouchTransport.tree.js
+pouchTransport.utils.js
 
 
 
 
+!Key PouchDB Classes
+PouchUtils
+	keyFromHash
+	volumeFromHash
+	getDatabase
+	getAttachment
+	putAttachment
+	createThumbnail
+	getDatabaseConfig
+	isLocalPouch, isCouch
+	zipFiles
+	unzipFiles
+	mkSomething
+	fixNameConflicts
+	fileAsURL
+
+PouchTree
+	getTarget
+	paste - 
+	getAllFilesInside - archive
+	getChildFOlders - tree
+	getParentsWithSiblings - parents
+	getChildren - open
+	getRootsAndSubfolders - open
+	getAllChildren - rm
+	mashResults - open
+	getTree
+	getAllFilesAndDirectoriesInside
+	getRootline
+	getTargets
 
 
 
@@ -133,4 +260,6 @@ first look at security add pw to localhost and iris - need to udpate cors settin
 1/5
 search on steroids - multi database search, searchable flag in db config, tokenised search with multi tokens
 document/review functions across pouchTransport
-14/5
+18/5
+replaced html editor with ckeditor (MPL license)
+run out of inspiration ;(

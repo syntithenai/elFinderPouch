@@ -1,6 +1,7 @@
 var pouchTransport={
 	editors: {},
 	options: {
+		maxSizeB64:350*1024,
 		dbs:[
 			{name : 'pouchlocalfilesystem', description: 'local pouch',connectionString : 'filesystem',syncWith:{},searchable:true,writable:false},
 			//{name : 'pouchlocalfilesystem', description: 'local pouch',connectionString : 'filesystem',syncWith:{}},

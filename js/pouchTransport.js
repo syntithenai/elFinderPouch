@@ -4,10 +4,6 @@
 // INIT ELFINDER					
 
 $(document).ready(function() {
-//test();
-	//return;
-	//pouchTransportConfig.initEditors();
-	//tinyMCE.init({}); 
 	console.log('docready pouchtransport.js');
 	$('#finder').elfinder({
 		// requestType : 'post',
@@ -32,7 +28,7 @@ $(document).ready(function() {
 
 			// current directory file menu
 			files  : [
-				'getfile','|','open', 'edit',  'resize', 'rename', '|', 'download',  'archive', 'extract','|', 'copy', 'cut', 'paste', 'duplicate', '|',
+				'getfile','|','open', 'view','edit', 'download', 'rename', '|',  'archive', 'extract','|', 'copy', 'cut', 'paste', 'duplicate', '|',
 				'rm'
 			]
 		},
@@ -72,34 +68,3 @@ $(document).ready(function() {
 	console.log('docready pouchtransport.js called');
 
 });
-
-
-
-
-/*
-
-
-			
-
-
-commands : [
-			'home', 'up', 'back', 'forward',
-			'mkdir', 'mkfile', 'upload',
-			'search', 'help',
-			'sort'
-		],
-		contextmenu : {
-			// navbarfolder menu
-			navbar : ['open', '|', 'copy', 'cut', 'paste', 'duplicate', '|', 'rm', '|', 'info'],
-
-			// current directory menu
-			cwd    : ['back', '|', 'upload', 'mkdir', 'mkfile', 'paste', '|', 'info'],
-
-			// current directory file menu
-			files  : [
-				'getfile', '|','open', 'quicklook', '|', 'download', '|', 'copy', 'cut', 'paste', 'duplicate', '|',
-				'rm', '|', 'edit', 'rename', 'resize', '|', 'archive', 'extract', '|', 'info'
-			]
-		},
-		
-*/

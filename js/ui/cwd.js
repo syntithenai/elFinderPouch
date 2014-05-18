@@ -5,7 +5,7 @@
  * @author Dmitry (dio) Levashov
  **/
 $.fn.elfindercwd = function(fm, options) {
-	
+//	console.log('ilfindercwd',fm,options);
 	this.not('.elfinder-cwd').each(function() {
 		// fm.time('cwdLoad');
 		
@@ -212,6 +212,7 @@ $.fn.elfindercwd = function(fm, options) {
 			 * @rise select			
 			 */
 			select = function(keyCode, append) {
+				console.log('fm select START');
 				var code     = $.ui.keyCode,
 					prev     = keyCode == code.LEFT || keyCode == code.UP,
 					sel      = cwd.find('[id].'+clSelected),
@@ -265,10 +266,11 @@ $.fn.elfindercwd = function(fm, options) {
 					}
 					// !append && unselectAll();
 				} else {
+				console.log('fm select from none');
 					// there are no selected file - select first/last one
 					n = cwd.find('[id]:not(.'+clDisabled+'):not(.elfinder-cwd-parent):'+(prev ? 'last' : 'first'));
 				}
-				
+				console.log('fm select n',n);
 				if (n && n.length && !n.is('.elfinder-cwd-parent')) {
 					if (append) {
 						// append new files to selected
@@ -749,11 +751,13 @@ $.fn.elfindercwd = function(fm, options) {
 				})
 				// attach draggable
 				.delegate(fileSelector, 'mouseenter.'+fm.namespace, function(e) {
+						
 					var $this = $(this),
 						target = list ? $this : $this.children();
-
+//console.log('attach draggable',fm,target,target.draggable)
 					if (!$this.is('.'+clTmp) && !target.is('.'+clDraggable+',.'+clDisabled)) {
-						target.draggable(fm.draggable);
+						var dg=fm.draggable;
+						target.draggable(dg);
 					}
 				})
 				// add hover class to selected file

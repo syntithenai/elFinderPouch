@@ -427,9 +427,13 @@ elFinder.prototype.commands.quicklook = function() {
 	this.exec = function() {
 		// IN THE ABSENSE OF A SELECTED 
 		// TODO GETSTATE
+		console.log('quicklook exec',this.fm.select);
 		// select first of cwd
 		if (this.fm.selected().length == 0) {
-
+			var sel=cwd.get(0).firstChild.id;
+			//fm.trigger('select', sel);
+			this.fm.select();
+			console.log('setsel',this.fm.selected(),sel);
 		// select first of selected
 		} else if (this.fm.selected().length >1) {
 			//this.fm.selec

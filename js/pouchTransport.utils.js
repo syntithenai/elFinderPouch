@@ -38,7 +38,7 @@ pouchTransport.utils = {
 			//console.log('get',key);
 			var db=pouchTransport.utils.getDatabase(target);
 			db.getAttachment(key,'fileContent',function(err,attResponse) {
-				//console.log('GET',err,attResponse);
+				console.log('GET',err,attResponse);
 				if (err) {
 					//console.log('ERROR',err);
 					d.resolve(new Blob(['']));
@@ -389,10 +389,12 @@ pouchTransport.utils = {
 		// full couch database server direct from database
 		console.log('fileasurl',file,forceBlob);
 		if (forceBlob || pouchTransport.utils.isLocalPouch(file.hash))  {
-		console.log('pouch');
+			console.log('pouch');
 			var pouch=JSON.parse(JSON.stringify(file));
 			pouchTransport.utils.getAttachment(pouch.hash).then(function(bs) {
-				if (bs && pouch) {
+				if (bs.size>pouchTransport.options.maxSizeB64) {
+					dfr.resolve('File size('+parseInt(bs.size/1024)+'kb) exceeds maximum for embedding('+parseInt(pouchTransport.options.maxSizeB64/1024)+'kb)');
+				} else if (bs && pouch) {
 					var fr=new FileReader();
 					fr.onload=function(e) {
 						//console.log('got',e.target.result);

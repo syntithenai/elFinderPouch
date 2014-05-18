@@ -3,22 +3,9 @@
 <head>
 	<meta charset="utf-8">
 	<title>elFinder 2.x source version with PHP connector</title>
-	<!-- 
-	<script type="text/javascript" src="https://getfirebug.com/firebug-lite.js"></script>
-	-->
-
-	<!-- <script src="jquery/jquery-1.8.1.min.js" type="text/javascript" charset="utf-8"></script> -->
-	<script src="jquery/jquery-1.9.1.min.js" type="text/javascript" charset="utf-8"></script>
-	
-	<!-- <script src="jquery/jquery-ui-1.8.21.custom.min.js"></script> -->
-	<!-- <script src="jquery/jquery-ui-1.8.23.custom.min.js" type="text/javascript" charset="utf-8"></script> -->
-	<!-- <link rel="stylesheet" href="jquery/ui-themes/smoothness/jquery-ui-1.8.23.custom.css" type="text/css" media="screen" title="no title" charset="utf-8"> -->
-	
-	<script src="jquery/jquery-ui-1.10.1.custom.min.js" type="text/javascript" charset="utf-8"></script>
-	<link rel="stylesheet" href="jquery/ui-themes/smoothness/jquery-ui-1.10.1.custom.css" type="text/css" media="screen" title="no title" charset="utf-8">
-	
-	<!-- <link rel="stylesheet" href="jquery/ui-themes/smoothness/jquery-ui-1.8.21.custom.css" type="text/css"> -->
-
+	<script src="jquery-ui/js/jquery-1.10.2.js" type="text/javascript" ></script>
+	<script src="jquery-ui/js/jquery-ui-1.10.4.custom.min.js" type="text/javascript"  charset="utf-8"></script>
+	<link rel="stylesheet" href="jquery-ui/css/smoothness/jquery-ui-1.10.4.custom.min.css" type="text/css"  charset="utf-8">
 	
 	<link rel="stylesheet" href="css/common.css"      type="text/css">
 	<link rel="stylesheet" href="css/dialog.css"      type="text/css">
@@ -34,7 +21,7 @@
 	<link rel="stylesheet" href="css/theme.css"       type="text/css">
 
 	<!-- elfinder core -->
-	<script src="js/elFinder.min.js"></script>
+	<script src="js/elFinder.js"></script>
 	<script src="js/elFinder.version.js"></script>
 	<script src="js/jquery.elfinder.js"></script>
 	<script src="js/elFinder.resources.js"></script>
@@ -129,16 +116,7 @@
 	<!--script src="extensions/jplayer/elfinder.quicklook.jplayer.js"></script-->
 
 <!-- POUCH -->
-	<!-- RTE -->
-	<!--script src="lib/tinymce/tinymce.min.js"></script-->
-	<!--script src="lib/jquery.webkitresize.js"></script-->
-	<!--script src="lib/tinymce/js/tinymce/tinymce.js"></script-->
-	 <script src="lib/ckeditor/ckeditor.js"></script>
-	<!-- SHEET -->
-	<link rel="stylesheet" type="text/css" href="lib/jquery.sheet/jquery.sheet.css" />
-	<script type="text/javascript" src="lib/jquery.sheet/jquery.sheet.js"></script>
-
-	<script src="js/pouchdb.js"></script>
+	<script src="lib/pouchdb.js"></script>
 	<script src="js/pouchTransportConfig.databases.js"></script>
 	<script src="js/pouchTransport.js"></script>
 	<script src="js/pouchTransport.editors.js"></script>
@@ -148,6 +126,12 @@
 	<script src="js/pouchTransport.send.js"></script>
 	<script src="js/pouchTransport.upload.js"></script>
 	<script src="js/elFinder.mimeMap.js"></script>
+	<!-- RTE -->
+	 <script src="lib/ckeditor/ckeditor.js"></script>
+	<!-- SHEET -->
+	<link rel="stylesheet" type="text/css" href="lib/jquery.sheet/jquery.sheet.css" />
+	<script type="text/javascript" src="lib/jquery.sheet/jquery.sheet.js"></script>
+
 	<!-- ZIP TOOLS -->
 	<script type="text/javascript" src="lib/zip.js"></script>
 	<script src="lib/aes.js"></script>
@@ -204,7 +188,6 @@
 .ui-dialog-titlebar .ui-icon-closethick {
 	display: none;
 }
-
 
 .elfinder-cwd-icon-image {
 	background-position:top;
