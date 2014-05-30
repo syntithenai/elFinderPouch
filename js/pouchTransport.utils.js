@@ -30,6 +30,41 @@ pouchTransport.utils = {
 		return match;		
 		//console.log('FAILED TO CREATE DB');
 	},
+	fileAsURL : function(file,forceBlob,width,height) {		
+		var dfr=$.Deferred();
+		// full couch database server direct from database
+		console.log('fileasurl',file,forceBlob);
+		if (forceBlob || pouchTransport.utils.isLocalPouch(file.hash))  {
+			console.log('pouch');
+			var pouch=JSON.parse(JSON.stringify(file));
+			pouchTransport.utils.getAttachment(pouch.hash).then(function(bs) {
+				if (bs.size>pouchTransport.options.maxSizeB64) {
+					dfr.resolve('File size('+parseInt(bs.size/1024)+'kb) exceeds maximum for embedding('+parseInt(pouchTransport.options.maxSizeB64/1024)+'kb)');
+				} else if (bs && pouch) {
+					var fr=new FileReader();
+					fr.onload=function(e) {
+						//console.log('got',e.target.result);
+						dfr.resolve(e.target.result);
+					}
+					var bs = new Blob([bs],{type: pouch.mime});
+					console.log('read',bs,'as dataurl');
+					fr.readAsDataURL(bs);
+				} else dfr.resolve('');
+			});
+		} else if (pouchTransport.utils.isCouch(file.hash)) {
+		console.log('couch');
+			var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
+			srcParts.push(file._id);
+			srcParts.push("fileContent");
+			url=srcParts.join("/");
+			dfr.resolve(url);
+		// local file, serve the whole file as a data url
+		}  else {
+		console.log('NONE');
+			dfr.resolve('');
+		}
+		return dfr;
+	},
 	getAttachment :  function(target) {
 		var d=$.Deferred();
 		var db=pouchTransport.utils.getDatabase(target);
@@ -79,7 +114,8 @@ pouchTransport.utils = {
 			// ensure id/hash alignment and timestamp record
 			toSave.hash=db.name+'_'+toSave._id;												
 			toSave.ts=Date.now();
-			// create thumbnails as object urls stored in record for some image types
+			// CREATE THUMBNAILS
+			// as object urls stored in record for some image types
 			if (content.size>0 && (toSave.mime=="image/png" || toSave.mime=="image/jpeg" || toSave.mime=="image/gif" )) {
 				//console.log('image create thumb');
 				pouchTransport.utils.createThumbnail(toSave,window.URL.createObjectURL(content)).then(function(tmb) {
@@ -136,48 +172,6 @@ pouchTransport.utils = {
 			console.log('No parent set when saving');
 		}
 		return dfr;
-	},
-	putAttachment : function(target,content,extraProperties) {
-		var d=$.Deferred();
-		console.log('DEPREC TODO FIX THISput attachment',target,content)
-		return;	
-		var db=pouchTransport.utils.getDatabase(target);
-		if (db && target) {
-			console.log('really put attachment',target,content)
-			db.get(pouchTransport.utils.keyFromHash(target),function(err,response) {
-				console.log('got rec',response)
-				if (!pouchTransport.utils.onerror(err)) {
-					response.size=content.length;
-					response.ts=Date.now();
-					
-					//if (typeof extraProperties=='object') $.extend(response,extraProperties);
-					function updateAndPutFile(response,target,content) {
-						db.put(response,function(err,putResponse) {
-							console.log('saved with updated size/ts/tmb',putResponse)
-							if (!pouchTransport.utils.onerror(err)) {
-								db.putAttachment(pouchTransport.utils.keyFromHash(target),'fileContent',putResponse.rev,new Blob([content]),response.mime,function(err,attResponse) {
-									console.log('done put attachement',attResponse)
-									d.resolve(response);
-								});
-							}
-						});
-					}
-					console.log('PUT ATTCH RESPONSEd',response);
-					if (response.mime=="image/png" || response.mime=="image/jpeg" || response.mime=="image/gif" ) {
-							console.log('image create thumb');
-						pouchTransport.utils.createThumbnail(response,content).then(function(tmb) {
-							response.tmb=tmb;
-							console.log('got tmb ',tmb);
-							updateAndPutFile(response,target,content);
-						});
-					} else {
-						updateAndPutFile(response,target,content);
-					}
-					
-				}
-			});
-		}
-		return d;
 	},
 	createThumbnail : function(target,base64Image) {
 		//console.log('CT',target,base64Image) ;
@@ -384,41 +378,6 @@ pouchTransport.utils = {
 	fixNameConflicts : function(targets,dst) {
 		return $.Deferred().resolve(targets);
 	},
-	fileAsURL : function(file,forceBlob,width,height) {		
-		var dfr=$.Deferred();
-		// full couch database server direct from database
-		console.log('fileasurl',file,forceBlob);
-		if (forceBlob || pouchTransport.utils.isLocalPouch(file.hash))  {
-			console.log('pouch');
-			var pouch=JSON.parse(JSON.stringify(file));
-			pouchTransport.utils.getAttachment(pouch.hash).then(function(bs) {
-				if (bs.size>pouchTransport.options.maxSizeB64) {
-					dfr.resolve('File size('+parseInt(bs.size/1024)+'kb) exceeds maximum for embedding('+parseInt(pouchTransport.options.maxSizeB64/1024)+'kb)');
-				} else if (bs && pouch) {
-					var fr=new FileReader();
-					fr.onload=function(e) {
-						//console.log('got',e.target.result);
-						dfr.resolve(e.target.result);
-					}
-					var bs = new Blob([bs],{type: pouch.mime});
-					console.log('read',bs,'as dataurl');
-					fr.readAsDataURL(bs);
-				} else dfr.resolve('');
-			});
-		} else if (pouchTransport.utils.isCouch(file.hash)) {
-		console.log('couch');
-			var srcParts=[pouchTransport.utils.getDatabaseConfig(file.hash).connectionString];
-			srcParts.push(file._id);
-			srcParts.push("fileContent");
-			url=srcParts.join("/");
-			dfr.resolve(url);
-		// local file, serve the whole file as a data url
-		}  else {
-		console.log('NONE');
-			dfr.resolve('');
-		}
-		return dfr;
-	},
 	encryption : function(check) {
 		// PRIVATE FUNCTIONS
 		var encode = function(text) {
@@ -508,3 +467,49 @@ pouchTransport.utils = {
 		
 	} 
 }
+/*
+	putAttachment : function(target,content,extraProperties) {
+		var d=$.Deferred();
+		console.log('DEPREC TODO FIX THISput attachment',target,content)
+		return;	
+		var db=pouchTransport.utils.getDatabase(target);
+		if (db && target) {
+			console.log('really put attachment',target,content)
+			db.get(pouchTransport.utils.keyFromHash(target),function(err,response) {
+				console.log('got rec',response)
+				if (!pouchTransport.utils.onerror(err)) {
+					response.size=content.length;
+					response.ts=Date.now();
+					
+					//if (typeof extraProperties=='object') $.extend(response,extraProperties);
+					function updateAndPutFile(response,target,content) {
+						db.put(response,function(err,putResponse) {
+							console.log('saved with updated size/ts/tmb',putResponse)
+							if (!pouchTransport.utils.onerror(err)) {
+								db.putAttachment(pouchTransport.utils.keyFromHash(target),'fileContent',putResponse.rev,new Blob([content]),response.mime,function(err,attResponse) {
+									console.log('done put attachement',attResponse)
+									d.resolve(response);
+								});
+							}
+						});
+					}
+					console.log('PUT ATTCH RESPONSEd',response);
+					if (response.mime=="image/png" || response.mime=="image/jpeg" || response.mime=="image/gif" ) {
+							console.log('image create thumb');
+						pouchTransport.utils.createThumbnail(response,content).then(function(tmb) {
+							response.tmb=tmb;
+							console.log('got tmb ',tmb);
+							updateAndPutFile(response,target,content);
+						});
+					} else {
+						updateAndPutFile(response,target,content);
+					}
+					
+				}
+			});
+		}
+		return d;
+	},
+
+
+*/

@@ -14,7 +14,7 @@ elFinder.prototype.commands.resize = function() {
 	
 	this.getstate = function() {
 		var sel = this.fm.selectedFiles();
-		return !this._disabled && sel.length == 1 && sel[0].read && sel[0].write && sel[0].mime.indexOf('image/') !== -1 ? 0 : -1;
+		return !this._disabled && sel.length == 1 && sel[0].read && sel[0].write && sel[0].mime.indexOf('image/') !== -1 && sel[0].mime.indexOf('image/svg+xml') === -1 ? 0 : -1;
 	};
 	
 	this.exec = function(hashes) {
@@ -506,6 +506,8 @@ elFinder.prototype.commands.resize = function() {
 						
 						dialog.elfinderdialog('close');
 						
+						
+						/*
 						fm.request({
 							data : {
 								cmd    : 'resize',
@@ -525,13 +527,35 @@ elFinder.prototype.commands.resize = function() {
 						.done(function() {
 							dfrd.resolve();
 						});
+					
 						
+						function() {
+							var dfr=$.Deferred();
+							canvasResize({
+								width    : w,     // Image width.
+								height   : h,       // Image height, default 0 (flexible).
+								crop     : false,   // default false.
+								quality  : 80,      // Image quality default 80.
+								rotate   : d,      // Image rotation default 0
+								callback : function(){},
+							})
+							dfr.resolve();
+							return dfr;
+						}()
+						.fail(function(error) {
+							dfrd.reject(error);
+						})
+						.done(function() {
+							dfrd.resolve();
+						});
+							*/
 					},
 					buttons = {},
 					hline   = 'elfinder-resize-handle-hline',
 					vline   = 'elfinder-resize-handle-vline',
-					rpoint  = 'elfinder-resize-handle-point',
-					src     = fm.url(file.hash)
+					rpoint  = 'elfinder-resize-handle-point';
+					var src= fm.url(file.hash);
+					console.log('bb',src)
 					;
 				
 				imgr.mousedown( rotate.start );
@@ -605,7 +629,7 @@ elFinder.prototype.commands.resize = function() {
 				
 				fm.dialog(dialog, {
 					title          : file.name,
-					width          : 650,
+					width          : $(window).width()*0.95,
 					resizable      : false,
 					destroyOnClose : true,
 					buttons        : buttons,
@@ -634,9 +658,21 @@ elFinder.prototype.commands.resize = function() {
 				pwidth  = preview.width()  - (rhandle.outerWidth()  - rhandle.width());
 				pheight = preview.height() - (rhandle.outerHeight() - rhandle.height());
 				
-				img.attr('src', src + (src.indexOf('?') === -1 ? '?' : '&')+'_='+Math.random());
-				imgc.attr('src', img.attr('src'));
-				imgr.attr('src', img.attr('src'));
+				//console.log('aa',file.hash,src);
+				if (pouchTransport.utils.isLocalPouch(file.hash) || pouchTransport.utils.isCouch(file.hash)) { //
+					console.log('pouch');
+					pouchTransport.utils.fileAsURL(file).then(function(url) {
+						console.log('pouchurl',url);
+						src=url;
+						img.attr('src', src + (src.indexOf('?') === -1 ? '?' : '&')+'_='+Math.random());
+						imgc.attr('src', img.attr('src'));
+						imgr.attr('src', img.attr('src'));
+					})
+				} else {
+					img.attr('src', src + (src.indexOf('?') === -1 ? '?' : '&')+'_='+Math.random());
+					imgc.attr('src', img.attr('src'));
+					imgr.attr('src', img.attr('src'));
+				}
 				
 			},
 			

@@ -225,7 +225,7 @@ elFinder.prototype.commands.quicklook = function() {
 				info.html('');
 				var mimeParts=file.mime.split("/");
 				// TODO video/audio
-				if (mimeParts[0]=='image' && (pouchTransport.utils.isLocalPouch(file.hash) || pouchTransport.utils.isCouch(file.hash))) {
+				if (mimeParts[0]=='image' && (pouchTransport.utils.isPouch(file.hash))) {
 					console.log('couch/pouch');
 					pouchTransport.utils.fileAsURL(file).then(function(url) {
 					console.log('couch/pouch url ',url,height);

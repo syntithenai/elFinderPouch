@@ -165,15 +165,15 @@ elFinder.prototype.commands.edit = function() {
 				file.mime.indexOf('image/gif') === 0|| file.mime.indexOf('image/png') === 0))  {
 				console.log('editing pouch bitmap image');
 				pouchTransport.utils.getAttachment(file.hash).then(function(data) {
-				console.log('eloaded image');
+					console.log('eloaded image');
 					dialog(id,file,data,true)
-						.done(function(dataToSave) {
+					.done(function(dataToSave) {
 						console.log('done dialog now SAVE');
-							pouchTransport.utils.save(file,dataToSave);
-							dfrd.resolve(dataToSave);
-						}).fail(function(error) {
-							dfrd.reject(error);
-						})
+						pouchTransport.utils.save(file,dataToSave);
+						dfrd.resolve(dataToSave);
+					}).fail(function(error) {
+						dfrd.reject(error);
+					})
 				});
 			} else {
 				fm.request({

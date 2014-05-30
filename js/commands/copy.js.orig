@@ -20,6 +20,7 @@ elFinder.prototype.commands.copy = function() {
 	}
 	
 	this.exec = function(hashes) {
+		console.log('copy',hashes,this.fm,this.files(hashes),this.hashes(hashes));
 		var fm   = this.fm,
 			dfrd = $.Deferred()
 				.fail(function(error) {
