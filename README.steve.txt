@@ -123,6 +123,8 @@ TODO  release 1
 	- audio editing + audio/video record webcam
 - encfs lock file
 - live sync
+- publish documents
+
 
 DREAMS
 - editable images/svg in the RTE
@@ -182,28 +184,29 @@ elFinderPouch
 		ui
 
 
-elFinder.js
-elFinder.command.js
-elFinder.history.js
-elFinder.mimeMap.js
-elFinder.options.js
-elFinder.resources.js
-elFinder.version.js
-elFinder.command.js
-jquery.dialogelfinder.js
-jquery.elfinder.js
+		elFinder.js
+		elFinder.command.js - prototype functions for elfinder.command - update, setup, exec, hashes, files, ....
 
-pouchTransportConfig.databases.js
-pouchTransport.js
-pouchTransport.upload.js
+		elFinder.history.js - internal history implementation
+		elFinder.mimeMap.js  - mine for file extension to mime type
+		elFinder.options.js - default options
 
-pouchTransport.editors.js
-pouchTransport.readers.js
+		elFinder.resources.js- css styles, mixin function??
+		elFinder.version.js - version number
 
-pouchTransport.send.js
+		jquery.elfinder.js  - jquery wrapper $.fn.elfinder and $.fn.getElFinder
+		jquery.dialogelfinder.js   - jquery wrapper with extra options to support open in dialog $.fn.dialogelfinder
+--------------------
+		pouchTransportConfig.databases.js
+		pouchTransport.js - elFinder configuration for pouch integration
+		pouchTransport.send.js - filesystem implementation
+		pouchTransport.upload.js  - filesystem implementation for upload/dnd
 
-pouchTransport.tree.js
-pouchTransport.utils.js
+		pouchTransport.editors.js - integrations for editors
+		pouchTransport.readers.js - integrations for readers
+
+		pouchTransport.tree.js - async recursive calls for tree iteration
+		pouchTransport.utils.js - misc utility functions
 
 
 
@@ -228,7 +231,7 @@ PouchTree
 	getTarget
 	paste - 
 	getAllFilesInside - archive
-	getChildFOlders - tree
+	getChildFolders - tree
 	getParentsWithSiblings - parents
 	getChildren - open
 	getRootsAndSubfolders - open
@@ -238,7 +241,6 @@ PouchTree
 	getAllFilesAndDirectoriesInside
 	getRootline
 	getTargets
-
 
 
 
@@ -263,3 +265,9 @@ document/review functions across pouchTransport
 18/5
 replaced html editor with ckeditor (MPL license)
 run out of inspiration ;(
+29/5
+keep coming back and struggling to get going.. - need to get onto the bugs... still issues around save/load for file streaming etc
+thinking about what the main ui looks like
+	currently based around file viewer
+	have looked at OS based (desktop muliple apps ...)
+	thinking tablet design

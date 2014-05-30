@@ -293,7 +293,7 @@ window.elFinder = function(node, opts) {
 		;
 
 
-/* END VARIABLE AND FUNCTION DEFNS DIRECTLY ON window.elFinder
+/* END VARIABLE AND FUNCTION DEFNS DIRECTLY ON window.elFinder*/
 
 	/**
 	 * Protocol version
@@ -760,11 +760,11 @@ window.elFinder = function(node, opts) {
 		}
 		if (pouchTransport.utils.isLocalPouch(hash) || pouchTransport.utils.isCouch(hash)) { //
 			console.log('pouch');
-			var dfr=$.Deferred()l
+			var dfr=$.Deferred();
 			$.when(pouchTransport.utils.fileAsURL(hash)).then(function(url) {
 				console.log(url);
 				return url;
-			}
+			});
 		}
 		console.log('not pouch');
 		if (file.url) {
